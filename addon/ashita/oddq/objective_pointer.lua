@@ -363,6 +363,9 @@ local function current_zone_id(live_context)
 end
 
 local function current_position(live_context)
+    if type(live_context) == "table" and live_context.current_position_available == false then
+        return nil
+    end
     return copy_position((live_context or {}).current_position or (live_context or {}).position)
 end
 
@@ -418,7 +421,7 @@ local function ensure_target_index()
     end
     target_index_ready = true
 
-    local loaded, targets = pcall(require, "data/" .. "targets")
+    local loaded, targets = pcall(require, "data/targets")
     if not loaded or type(targets) ~= "table" then
         return
     end
@@ -445,9 +448,9 @@ local function indexed_targets_for_name(name, zone_id)
         return nil
     end
 
-    local zone_bucket = zone_id ~= nil and target_index_by_zone[zone_id] or nil
-    if zone_bucket ~= nil and zone_bucket[key] ~= nil then
-        return zone_bucket[key]
+    if zone_id ~= nil then
+        local zone_bucket = target_index_by_zone[zone_id]
+        return zone_bucket ~= nil and zone_bucket[key] or nil
     end
     return target_index_any_zone[key]
 end
@@ -475,8 +478,10 @@ local function target_from_index(name, step, zone_id, live_context)
     local targets = nil
     if zone_id ~= nil then
         targets = indexed_targets_for_name(name, zone_id)
-    end
-    if targets == nil and live_zone ~= nil then
+        if targets == nil then
+            return nil
+        end
+    elseif live_zone ~= nil then
         targets = indexed_targets_for_name(name, live_zone)
     end
     if targets == nil then
@@ -489,7 +494,7 @@ end
 local function checkpoint_from_step(name, step)
     local zone_id = positive_zone_id((step or {}).zone_id)
     local map_grid = first_nonblank((step or {}).map_grid)
-    if name == "" or (zone_id == nil and map_grid == "") then
+    if name == "" then
         return nil
     end
     return location(
@@ -530,17 +535,50 @@ local function step_target_names(step)
     return names
 end
 
+local function concise_instruction(step)
+    local text = trim((step or {}).instruction)
+    if text == "" then
+        return ""
+    end
+
+    local sentence = text:match("^(.-)[%.%!%?]%s") or text
+    if #sentence > 72 then
+        sentence = sentence:sub(1, 69) .. "..."
+    end
+    return sentence
+end
+
 local function target_from_choice(choice, step, live_context)
     if type(choice) ~= "table" then
         return nil
     end
-    local name = first_nonblank(choice.npc_name, choice.object_name, choice.mob_name, choice.target_name)
+    local name = first_nonblank(
+        choice.npc_name,
+        choice.object_name,
+        choice.mob_name,
+        choice.target_name,
+        concise_instruction(step)
+    )
     local choice_step = {
         zone_id = choice.zone_id,
         map_grid = choice.map_grid,
+        position = choice.position,
         target_map_id = step and step.target_map_id,
         target_map_label = step and step.target_map_label,
     }
+    local direct_position = copy_position(choice.position)
+    if direct_position ~= nil then
+        return location(
+            "choice:" .. normalize_text(name),
+            name,
+            positive_zone_id(choice.zone_id),
+            first_nonblank(choice.map_grid),
+            direct_position,
+            tonumber((step or {}).arrival_radius) or 8,
+            (step or {}).target_map_id,
+            (step or {}).target_map_label
+        )
+    end
     return target_from_index(name, choice_step, positive_zone_id(choice.zone_id), live_context)
         or checkpoint_from_step(name, choice_step)
 end
@@ -567,6 +605,36 @@ local function target_from_step(step, live_context)
         return nil
     end
 
+    if safe_text(step.step_kind):lower() == "prep_note" then
+        local label = first_nonblank(concise_instruction(step), "Complete the prerequisite before continuing")
+        return location(
+            "manual:" .. normalize_text(first_nonblank(step.step_id, label)),
+            label,
+            nil,
+            "",
+            nil,
+            tonumber(step.arrival_radius) or 8,
+            nil,
+            nil
+        )
+    end
+
+    local direct_position = copy_position(step.position)
+    if direct_position ~= nil then
+        local names = step_target_names(step)
+        local label = first_nonblank(names[1], concise_instruction(step), "Next objective")
+        return location(
+            "step:" .. normalize_text(first_nonblank(step.step_id, label)),
+            label,
+            positive_zone_id(step.zone_id),
+            first_nonblank(step.map_grid),
+            direct_position,
+            tonumber(step.arrival_radius) or 8,
+            step.target_map_id,
+            step.target_map_label
+        )
+    end
+
     local choice_target = target_from_choices(step, live_context)
     if choice_target ~= nil then
         return choice_target
@@ -583,31 +651,20 @@ local function target_from_step(step, live_context)
             return target
         end
     end
-    return nil
+    return checkpoint_from_step(concise_instruction(step), step)
 end
 
 local function selected_or_nearest_step(objective, guidance, live_context)
     local step_index = selected_step_index(objective, guidance)
     local steps = (objective or {}).steps
     if type(steps) ~= "table" or #steps == 0 then
+        if target_from_step(objective, live_context) ~= nil then
+            return objective, 1
+        end
         return nil
     end
     if step_index ~= nil then
         return steps[step_index], step_index
-    end
-
-    local live_zone = current_zone_id(live_context)
-    if live_zone ~= nil then
-        for index, step in ipairs(steps) do
-            if positive_zone_id(step.zone_id) == live_zone then
-                return step, index
-            end
-            for _, choice in ipairs(step.choices or {}) do
-                if positive_zone_id(choice.zone_id) == live_zone then
-                    return step, index
-                end
-            end
-        end
     end
 
     for index, step in ipairs(steps) do
@@ -735,9 +792,14 @@ end
 
 function objective_pointer.supports(objective)
     local key = objective_key(objective)
-    return key == SANDORIA_3_1_OBJECTIVE_ID
+    if key == SANDORIA_3_1_OBJECTIVE_ID
         or key == SANDORIA_4_1_OBJECTIVE_ID
-        or is_sandoria_mission(objective)
+    then
+        return true
+    end
+
+    local step = selected_or_nearest_step(objective, {}, {})
+    return target_from_step(step, {}) ~= nil
 end
 
 function objective_pointer.build_route(objective, guidance, live_context)
@@ -747,10 +809,14 @@ function objective_pointer.build_route(objective, guidance, live_context)
 
     local key = objective_key(objective)
     if key == SANDORIA_4_1_OBJECTIVE_ID then
-        return build_route_for_target(objective, target_for_sandoria_4_1(objective, guidance, live_context))
+        local target = target_for_sandoria_4_1(objective, guidance, live_context)
+            or target_for_sandoria_generic(objective, guidance, live_context)
+        return build_route_for_target(objective, target)
     end
     if key == SANDORIA_3_1_OBJECTIVE_ID then
-        return build_route_for_target(objective, target_for_sandoria_3_1(objective, guidance, live_context))
+        local target = target_for_sandoria_3_1(objective, guidance, live_context)
+            or target_for_sandoria_generic(objective, guidance, live_context)
+        return build_route_for_target(objective, target)
     end
 
     return build_route_for_target(objective, target_for_sandoria_generic(objective, guidance, live_context))

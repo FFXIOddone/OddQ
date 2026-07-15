@@ -363,19 +363,15 @@ function arrow_overlay.render(imgui, state, route, active_segment_index, live_co
         imgui.SetNextWindowBgAlpha(layout.alpha or 0.35)
     end
     local pushed = skin.push_window(imgui, layout.alpha or 0.35)
-    local visible, open = window_state.begin(imgui, "OddQ Direction Cue", true, flags)
+    local visible, open = window_state.begin(imgui, "OddQ Pointer", true, flags)
     state.arrow.visible = open
     if visible then
         local cue = guidance_cursor.build(route, active_segment_index, live_context)
-        local mode_rendered = false
         if cue.available == true then
             if cue.zone_mismatch == true then
                 imgui_text.colored(imgui, skin.colors.blue_highlight, wrong_zone_title(cue))
                 cue_gap(imgui)
                 imgui_text.wrapped(imgui, wrong_zone_travel_line(cue))
-                cue_gap(imgui)
-                imgui_text.colored(imgui, skin.colors.blue_highlight, "Mode: Manual guidance")
-                mode_rendered = true
             elseif cue.map_mismatch == true then
                 imgui_text.colored(imgui, { 1.0, 0.35, 0.25, 1.0 }, "Wrong map")
                 cue_gap(imgui)
@@ -392,22 +388,6 @@ function arrow_overlay.render(imgui, state, route, active_segment_index, live_co
                 imgui_text.wrapped(imgui, tostring(cue.label or "Route target"))
             end
             if cue.zone_mismatch ~= true then
-                if cue.segment_index ~= nil and cue.segment_count ~= nil then
-                    cue_gap(imgui)
-                    imgui_text.text(imgui, "Segment: " .. tostring(cue.segment_index) .. "/" .. tostring(cue.segment_count))
-                end
-                if cue.target_map_label ~= nil and cue.target_map_label ~= "" then
-                    cue_gap(imgui)
-                    imgui_text.text(imgui, "Target map: " .. tostring(cue.target_map_label))
-                end
-                if cue.current_map_label ~= nil and cue.current_map_label ~= "" then
-                    cue_gap(imgui)
-                    imgui_text.text(imgui, "Current map: " .. tostring(cue.current_map_label))
-                end
-                if cue.travel_path ~= nil and cue.travel_path ~= "" then
-                    cue_gap(imgui)
-                    imgui_text.text(imgui, "Travel: " .. tostring(cue.travel_path))
-                end
                 if cue.map_grid ~= nil and cue.map_grid ~= "" then
                     cue_gap(imgui)
                     imgui_text.text(imgui, "Map grid: " .. tostring(cue.map_grid))
@@ -422,26 +402,14 @@ function arrow_overlay.render(imgui, state, route, active_segment_index, live_co
                 end
                 if cue.route_complete == true then
                     imgui_text.colored(imgui, skin.colors.blue_highlight, "Zone reached; verify manually")
-                elseif cue.map_mismatch == true then
-                    imgui_text.colored(imgui, { 1.0, 0.35, 0.25, 1.0 }, "Move to the target map")
-                elseif cue.checkpoint_only == true then
-                    imgui_text.colored(imgui, skin.colors.blue_highlight, "Use the map/grid checkpoint")
                 elseif cue.off_route == true then
                     imgui_text.colored(imgui, skin.colors.blue, tostring(cue.status_label or "Off route"))
-                elseif cue.status_label == "nearest route point" then
-                    imgui_text.colored(imgui, skin.colors.blue_highlight, "Nearest route point")
                 elseif cue.arrived == true then
                     imgui_text.colored(imgui, skin.colors.blue_highlight, "Near target; use /odd next")
                 end
             end
         else
             imgui_text.colored(imgui, skin.colors.blue, "No visual route target")
-        end
-        if mode_rendered ~= true then
-            cue_gap(imgui)
-            imgui_text.colored(imgui, skin.colors.blue_highlight, "Mode:")
-            cue_same_line(imgui, cue_number("label_gap", nil))
-            imgui_text.text(imgui, "Manual guidance")
         end
         if imgui.GetWindowPos ~= nil then
             local x, y = imgui.GetWindowPos()

@@ -187,6 +187,13 @@ local function segment_target_map_label(segment)
     )
 end
 
+local function live_position(live_context)
+    if type(live_context) == "table" and live_context.current_position_available == false then
+        return nil
+    end
+    return copy_position((live_context or {}).current_position)
+end
+
 local function segment_travel_source(segment)
     if type(segment) ~= "table" then
         return {}
@@ -470,7 +477,7 @@ local function segment_reached(route, segment, live_context)
     end
 
     local target = segment_target(segment)
-    local current = copy_position((live_context or {}).current_position)
+    local current = live_position(live_context)
     if target == nil or current == nil then
         return false
     end
@@ -594,7 +601,7 @@ function guidance_cursor.resolve_segment_state(route, active_segment_index, live
 
     local live = live_context or {}
     local current_zone = tonumber(live.current_zone_id or live.zone_id or live.zone)
-    local current = copy_position(live.current_position)
+    local current = live_position(live)
 
     if current_zone ~= nil then
         local segment = segments[index]
@@ -721,7 +728,7 @@ function guidance_cursor.build(route, active_segment_index, live_context)
     local label = segment_label(segment)
     local target = segment_target(segment)
     local live = live_context or {}
-    local current = copy_position(live.current_position)
+    local current = live_position(live)
     local current_zone = tonumber(live.current_zone_id or live.zone_id or live.zone)
     local target_zone = tonumber(segment.zone_id)
     local destination_zone = segment_destination_zone(segment)

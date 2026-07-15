@@ -18,8 +18,7 @@ local exp_type_labels = {
 }
 
 local persisted_boolean_paths = {
-    { key = "integrations.allow_filterscan_command", path = { "preferences", "integrations", "allow_filterscan_command" } },
-    { key = "integrations.allow_minimap_command", path = { "preferences", "integrations", "allow_minimap_command" } },
+    { key = "display.show_pointer", path = { "preferences", "display", "show_pointer" } },
 }
 
 local function nested_value(root, path)
@@ -48,47 +47,18 @@ end
 function guidance_state.new()
     return {
         first_launch_seen = false,
-        guide_notes_open = false,
-        detailed_information_open = false,
         main_window_open = false,
         main_view = "browse",
-        ui_tuner_open = false,
         settings_open = false,
-        assist_hub_open = false,
         preferences = {
             display = {
-                show_checklist = true,
-                show_travel_hints = true,
-                show_target_confirmation = true,
-                show_readiness = true,
-                show_objective_cards = true,
-            },
-            integrations = {
-                show_filterscan = true,
-                allow_filterscan_command = false,
-                auto_filterscan_on_match = false,
-                filterscan_cooldown_seconds = 30,
-                show_minimap = true,
-                allow_minimap_command = false,
-                minimap_zoom = 0.30,
-            },
-            safety = {
-                show_integration_status = true,
+                show_pointer = true,
             },
         },
         arrow = {
             visible = false,
             x = 760,
             y = 390,
-        },
-        map = {
-            visible = false,
-            minimap_visible = false,
-        },
-        map_pin = {
-            visible = false,
-            x = 760,
-            y = 540,
         },
         modes = {
             missions = true,
@@ -147,10 +117,6 @@ end
 
 function guidance_state.exp_type_label(kind)
     return exp_type_labels[kind] or tostring(kind or "unknown")
-end
-
-function guidance_state.always_show_exp_camps_on_minimap()
-    return false
 end
 
 function guidance_state.exp_guidance_enabled(state)
@@ -271,74 +237,6 @@ function guidance_state.toggle_exp_type(state, kind)
 
     state.exp_types[kind] = not state.exp_types[kind]
     return true
-end
-
-local function sample_objective(mode)
-    if mode == "missions" then
-        return {
-            mode = "missions",
-            label = "First available mission",
-            objective_id = "mission.next",
-            quest_name = "Next Mission Objective",
-            zone_id = 231,
-            evidence = { status = "local_guidance" },
-        }
-    end
-    if mode == "quests" then
-        return {
-            mode = "quests",
-            label = "First available quest",
-            objective_id = "quest.next",
-            quest_name = "Next Quest Objective",
-            zone_id = 231,
-            evidence = { status = "local_guidance" },
-        }
-    end
-    if mode == "jobs" then
-        return {
-            mode = "jobs",
-            label = "First available job unlock",
-            objective_id = "job_unlock.next",
-            quest_name = "Recommended Job Unlock",
-            zone_id = 241,
-            evidence = { status = "local_guidance" },
-        }
-    end
-
-    return {
-        mode = "exp",
-        label = "First available EXP camp",
-        objective_id = "exp.next",
-        quest_name = "Recommended EXP Camp",
-        zone_id = 101,
-        evidence = { status = "local_guidance" },
-    }
-end
-
-function guidance_state.first_available_objective(state, objectives_by_mode)
-    objectives_by_mode = objectives_by_mode or {}
-    if state == nil or state.modes == nil then
-        return sample_objective("missions")
-    end
-
-    for _, mode in ipairs(guidance_state.priority_order) do
-        if state.modes[mode] == true then
-            local objective = objectives_by_mode[mode]
-            if objective ~= nil then
-                objective.mode = objective.mode or mode
-                return objective
-            end
-            return sample_objective(mode)
-        end
-    end
-
-    return {
-        mode = "none",
-        label = "No tracking modes enabled",
-        objective_id = "none",
-        quest_name = "Enable Missions, Job Unlocks, Quests, or EXP",
-        evidence = { status = "disabled" },
-    }
 end
 
 return guidance_state

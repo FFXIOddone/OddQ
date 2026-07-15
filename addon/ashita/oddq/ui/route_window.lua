@@ -92,7 +92,7 @@ local function objective_label(objective)
     return objective_id ~= "" and objective_id or "No objective tracked"
 end
 
-function route_window.should_use_tabbed_guide(objective)
+function route_window.should_use_step_guide(objective)
     return type(objective) == "table" and type(objective.steps) == "table" and #objective.steps > 1
 end
 
@@ -626,12 +626,14 @@ end
 
 local function clamp_step_tab_index(guidance, max_index)
     if type(guidance) ~= "table" then
-        return 0
+        return max_index > 0 and 1 or 0
     end
 
-    local selected = tonumber(guidance.guide_step_tab_index) or 0
-    if selected < 0 then
+    local selected = math.floor(tonumber(guidance.guide_step_tab_index) or 1)
+    if max_index <= 0 then
         selected = 0
+    elseif selected < 1 then
+        selected = 1
     elseif selected > max_index then
         selected = max_index
     end
@@ -730,93 +732,20 @@ local function detail_same_line(imgui, gap)
     end
 end
 
-local function guide_tab_label(index)
-    index = math.floor(tonumber(index) or 0)
-    if index < 0 then
-        index = 0
-    elseif index > 99 then
-        index = 99
-    end
-    if index == 0 then
-        return "Summary"
-    end
-    return tostring(index)
-end
-
-local function push_guide_tab_text_style(imgui)
-    local pushed = { colors = 0, vars = 0 }
-    if imgui ~= nil and imgui.PushStyleColor ~= nil and ImGuiCol_Text ~= nil then
-        local color = skin.colors.text or { 1.0, 1.0, 1.0, 1.0 }
-        imgui.PushStyleColor(ImGuiCol_Text, {
-            tonumber(color[1]) or 1.0,
-            tonumber(color[2]) or 1.0,
-            tonumber(color[3]) or 1.0,
-            1.0,
-        })
-        pushed.colors = pushed.colors + 1
-    end
-    if imgui ~= nil and imgui.PushStyleVar ~= nil and ImGuiStyleVar_ButtonTextAlign ~= nil then
-        imgui.PushStyleVar(ImGuiStyleVar_ButtonTextAlign, { 0.0, 0.5 })
-        pushed.vars = pushed.vars + 1
-    end
-    return pushed
-end
-
-local function pop_guide_tab_text_style(imgui, pushed)
-    pushed = pushed or { colors = 0, vars = 0 }
-    if imgui ~= nil and imgui.PopStyleVar ~= nil and pushed.vars > 0 then
-        imgui.PopStyleVar(pushed.vars)
-    end
-    if imgui ~= nil and imgui.PopStyleColor ~= nil and pushed.colors > 0 then
-        imgui.PopStyleColor(pushed.colors)
-    end
-end
-
-local function guide_tab_button(imgui, guidance, index, selected)
-    local button_label = guide_tab_label(index) .. "##oddq_guide_tab_" .. tostring(index)
-    local pushed = push_guide_tab_text_style(imgui)
-    local clicked = skin.button(imgui, button_label, selected and "active" or "secondary", detail_button_size("tab_button_height"))
-    pop_guide_tab_text_style(imgui, pushed)
-    if clicked then
-        guidance.guide_step_tab_index = index
-    end
-end
-
-local function render_step_tabs(imgui, guidance, objective, selected, context)
-    if type(guidance) ~= "table" or type(objective) ~= "table" or type(objective.steps) ~= "table" then
-        return
-    end
-
-    detail_set_indent(imgui, context, 0.0)
-    local max_per_row = math.max(1, math.floor(detail_number("tab_max_buttons_per_row", 8.0)))
-    for index = 0, #objective.steps do
-        if index > 0 and (index % max_per_row) ~= 0 then
-            detail_same_line(imgui, detail_number("tab_button_gap", 6.0))
-        end
-        guide_tab_button(imgui, guidance, index, selected == index)
-    end
-end
-
-local function render_tabbed_guide_summary(imgui, summary, objective, context)
-    detail_section_header(imgui, "Guide Summary", context)
-    detail_gap(imgui, detail_number("summary_gap", 4.0))
-    for _, line in ipairs(summary.requirement_lines) do
-        detail_text(imgui, line, context, detail_number("body_indent_x", 0.0))
-    end
-
-    detail_text(imgui, "Choose a numbered step or press Next to begin.", context, detail_number("body_indent_x", 0.0))
-end
-
-local function render_tabbed_guide_step(imgui, objective, selected, known, context)
+local function render_guide_step(imgui, objective, selected, max_index, known, context)
     local step = ((objective or {}).steps or {})[selected]
     if type(step) ~= "table" then
         return
     end
 
-    detail_section_header(imgui, "Step " .. tostring(selected) .. ": " .. tab_label_for_step(step, selected):gsub("^%d+%s+", ""), context)
+    local target = tab_label_for_step(step, selected):gsub("^%d+%s+", "")
+    local heading = target ~= "Step" and target
+        or ("Step " .. tostring(selected) .. " of " .. tostring(max_index))
+    detail_section_header(imgui, heading, context)
     detail_gap(imgui, detail_number("step_body_gap", 4.0))
     local line = step_line(step, selected, known)
     if line ~= nil then
+        line = line:gsub("^%d+%.%s*", "")
         detail_text(imgui, line, context, detail_number("body_indent_x", 0.0))
     end
     for _, note_line in ipairs(step_note_lines(step)) do
@@ -825,7 +754,36 @@ local function render_tabbed_guide_step(imgui, objective, selected, known, conte
     end
 end
 
-local function render_tabbed_guide(imgui, state, summary, known, on_command)
+local function render_step_navigation(imgui, guidance, objective, selected, max_index, on_command)
+    if imgui.Button == nil then
+        return
+    end
+
+    detail_gap(imgui, detail_number("nav_top_gap", 4.0))
+    local mission = safe_text(objective.objective_kind) == "mission"
+    local previous_enabled = selected > 1 or mission
+    local previous_label = selected == 1 and mission and "Previous Mission" or "Previous"
+    if skin.button(imgui, previous_label .. "##oddq_guide_prev", previous_enabled and "secondary" or "disabled", detail_button_size("nav_button_height", "nav_button_width")) then
+        if selected > 1 then
+            guidance.guide_step_tab_index = selected - 1
+        elseif type(on_command) == "function" then
+            on_command({ "previous" })
+        end
+    end
+    detail_same_line(imgui, detail_number("nav_button_gap", 7.0))
+    local next_enabled = selected < max_index or mission
+    local next_label = selected == max_index and mission and "Next Mission" or "Next"
+    if skin.button(imgui, next_label .. "##oddq_guide_next", next_enabled and "primary" or "disabled", detail_button_size("nav_button_height", "nav_button_width")) then
+        if selected < max_index then
+            guidance.guide_step_tab_index = selected + 1
+        elseif type(on_command) == "function" then
+            on_command({ "next" })
+        end
+    end
+    detail_gap(imgui, detail_number("nav_bottom_gap", 4.0))
+end
+
+local function render_step_guide(imgui, state, summary, known, on_command)
     local objective = state.objective or {}
     local guidance = state.guidance or {}
     state.guidance = guidance
@@ -839,44 +797,8 @@ local function render_tabbed_guide(imgui, state, summary, known, on_command)
 
     detail_gap(imgui, detail_number("padding_y", 0.0))
     detail_gap(imgui, detail_number("content_top_gap", 0.0))
-    detail_section_header(imgui, "Guide Tabs", context)
-    render_step_tabs(imgui, guidance, objective, selected, context)
-    selected = clamp_step_tab_index(guidance, max_index)
-
-    if imgui.Button ~= nil then
-        detail_gap(imgui, detail_number("nav_top_gap", 4.0))
-        local mission = safe_text(objective.objective_kind) == "mission"
-        local previous_enabled = selected > 0 or mission
-        local previous_label = selected == 0 and mission and "Previous Mission" or "Previous"
-        if skin.button(imgui, previous_label .. "##oddq_guide_prev", previous_enabled and "secondary" or "disabled", detail_button_size("nav_button_height", "nav_button_width")) then
-            if selected > 0 then
-                selected = selected - 1
-                guidance.guide_step_tab_index = selected
-            elseif type(on_command) == "function" then
-                on_command({ "previous" })
-            end
-        end
-        if imgui.SameLine ~= nil then
-            detail_same_line(imgui, detail_number("nav_button_gap", 7.0))
-        end
-        local next_enabled = selected < max_index or mission
-        local next_label = selected == max_index and mission and "Next Mission" or "Next"
-        if skin.button(imgui, next_label .. "##oddq_guide_next", next_enabled and "primary" or "disabled", detail_button_size("nav_button_height", "nav_button_width")) then
-            if selected < max_index then
-                selected = selected + 1
-                guidance.guide_step_tab_index = selected
-            elseif type(on_command) == "function" then
-                on_command({ "next" })
-            end
-        end
-        detail_gap(imgui, detail_number("nav_bottom_gap", 4.0))
-    end
-
-    if selected == 0 then
-        render_tabbed_guide_summary(imgui, summary, objective, context)
-    else
-        render_tabbed_guide_step(imgui, objective, selected, known, context)
-    end
+    render_guide_step(imgui, objective, selected, max_index, known, context)
+    render_step_navigation(imgui, guidance, objective, selected, max_index, on_command)
     detail_gap(imgui, detail_number("content_bottom_gap", 0.0))
 end
 
@@ -1119,7 +1041,10 @@ local function render_objective_cluster(imgui, state, summary, on_command)
         step_count = #objective.steps
     end
     local selected = tonumber(guidance.guide_step_tab_index) or 0
-    if selected < 0 then
+    if step_count > 0 and selected < 1 then
+        selected = 1
+        guidance.guide_step_tab_index = selected
+    elseif selected < 0 then
         selected = 0
     elseif step_count > 0 and selected > step_count then
         selected = step_count
@@ -1147,14 +1072,14 @@ local function render_objective_cluster(imgui, state, summary, on_command)
     local can_next = objective_kind == "mission"
         or (step_count > 1 and selected < step_count)
         or (segment_count > 1 and segment_index < segment_count)
-    local tabbed = route_window.should_use_tabbed_guide(objective)
+    local step_guide = route_window.should_use_step_guide(objective)
     local handlers = {}
-    if not tabbed and can_previous then
+    if not step_guide and can_previous then
         handlers.on_previous = function()
             dispatch_command(on_command, { "previous" })
         end
     end
-    if not tabbed and can_next then
+    if not step_guide and can_next then
         handlers.on_next = function()
             dispatch_command(on_command, { "next" })
         end
@@ -1163,10 +1088,13 @@ local function render_objective_cluster(imgui, state, summary, on_command)
     local progress_label = ""
     if step_count == 1 then
         progress = 1
-        progress_label = "Step 1/1"
+        progress_label = "Step 1 of 1"
     elseif step_count > 1 and selected > 0 then
         progress = selected / step_count
-        progress_label = "Step " .. tostring(selected) .. "/" .. tostring(step_count)
+        progress_label = "Step " .. tostring(selected) .. " of " .. tostring(step_count)
+    end
+    if step_guide then
+        instruction = ""
     end
     skin.objective_cluster(imgui, {
         title = title,
@@ -1174,7 +1102,7 @@ local function render_objective_cluster(imgui, state, summary, on_command)
         progress = not placeholder and progress or nil,
         progress_label = progress_label,
         instruction = instruction,
-        show_controls = not placeholder and not tabbed and (can_previous or can_next),
+        show_controls = not placeholder and not step_guide and (can_previous or can_next),
     }, handlers)
 end
 
@@ -1192,8 +1120,8 @@ function route_window.render(imgui, state, on_command)
         return
     end
 
-    if route_window.should_use_tabbed_guide(state.objective) then
-        render_tabbed_guide(imgui, state, summary, known, on_command)
+    if route_window.should_use_step_guide(state.objective) then
+        render_step_guide(imgui, state, summary, known, on_command)
         return
     end
 
@@ -1228,8 +1156,8 @@ function route_window.render_detailed_information(imgui, state, on_command)
 
     local summary = build_summary(state)
     local known = known_requirement_state(state)
-    if route_window.should_use_tabbed_guide(state.objective) then
-        render_tabbed_guide(imgui, state, summary, known, on_command)
+    if route_window.should_use_step_guide(state.objective) then
+        render_step_guide(imgui, state, summary, known, on_command)
         return
     end
 

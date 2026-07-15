@@ -14,17 +14,9 @@ function map_layers.render(
     route,
     objective,
     active_segment_index,
-    guided_menu_text,
-    on_command,
-    assist_state,
-    on_assist_action
+    on_command
 )
     if imgui == nil or state == nil then
-        return
-    end
-
-    if state.settings_open == true then
-        settings_window.render(imgui, state)
         return
     end
 
@@ -34,11 +26,9 @@ function map_layers.render(
         objective,
         route,
         active_segment_index,
-        guided_menu_text,
-        on_command,
-        assist_state,
-        on_assist_action
+        on_command
     )
+    settings_window.render(imgui, state)
 end
 
 return map_layers

@@ -1,64 +1,81 @@
-# OddQ Review Guide
+# OddQ RC3 Review Guide
 
-This is the fast path for reviewing OddQ without spelunking through source first.
+This is the shortest review path for the local-only OddQ MVP.
 
-## Entry Points
+## What ships
 
-- Build plan: `docs/plans/2026-05-03-odd-build-plan.md`
-- Slice guide: `docs/plans/2026-05-03-oddq-slice-by-slice-guide.md`
-- Security stance: `docs/SECURITY.md`
-- Review contract: `tools/oddq_review/review_contract.json`
-- Review generator: `tools/oddq_review/review_tool.py`
-- Hosted profile: `docs/CATSEYEXI_HOSTED.md`
-- Hosted manifest builder: `tools/Odd.ManifestBuilder/manifest_builder.py`
+The runtime is the Lua addon under `addon/ashita/oddq`. Its player-facing
+surface is deliberately small:
 
-## Commands
+- `oddq.lua` owns Ashita events and `/odd` command routing.
+- `ui/main_window.lua` owns the one shared browser/guide window.
+- `ui/route_window.lua` renders the current guide step and Previous/Next.
+- `objective_pointer.lua` resolves exact targets, zone checkpoints, and manual
+  cues.
+- `ui/arrow_overlay.lua` owns the optional `OddQ Pointer` window.
+- `ui/settings_window.lua` owns the Settings popup.
 
-```powershell
-python -m tools.oddq_workflow
-python -m unittest discover tests -v
-python -m tools.oddq_review.review_tool --contract tools/oddq_review/review_contract.json --docs docs --markers-root .
-python tools/Odd.ManifestBuilder/manifest_builder.py --contract tools/oddq_review/review_contract.json --docs docs --markers-root .
-python -m tools.oddq_release --root . --version 0.1.0-rc2 --force
-rg -F "ODD_CXI_" .
-rg -F "ODD_NETWORK_CALL" .
-rg -F "ODD_PACKET_READ" .
-rg -F "ODD_FILE_WRITE" .
-rg -F "ODD_SECURITY_NOTE" .
-```
+The release does not require or start a bridge, backend, service, helper
+executable, updater, or server component.
 
-## Generated Files
+## Runtime review
 
-- `docs/GENERATED_NETWORK_MANIFEST.json`
-- `docs/GENERATED_PACKET_MANIFEST.json`
-- `docs/GENERATED_FILESYSTEM_MANIFEST.json`
-- `docs/GENERATED_COMMAND_MANIFEST.json`
-- `docs/GENERATED_DEPENDENCY_MANIFEST.json`
-- `docs/GENERATED_BENCHMARK_REPORT.md`
-- `docs/GENERATED_PRIVACY_REPORT.md`
-- `docs/GENERATED_AUDIT_REPORT.json`
-- `docs/GENERATED_SCHEMA_VALIDATION.json`
-- `docs/GENERATED_CXI_MARKERS.json`
+Review these properties directly in the shipped Lua tree:
 
-## Release Artifact
+1. There is no outgoing-command or packet-mutation API.
+2. No network client or endpoint is loaded by the addon.
+3. The D3D-present handler reads local player context, renders UI, and saves
+   preferences; it does not automate gameplay.
+4. Missing coordinates remain zone/map checkpoints or manual cues.
+5. Closing OddQ closes the guide, pointer, and Settings surfaces.
 
-`python -m tools.oddq_release --root . --version 0.1.0-rc2 --force` writes
-`build/release/oddq-v0.1.0-rc2.zip`. The archive contains only the installable
-`Ashita/addons/oddq` tree, `MANIFEST.json`, `SHA256SUMS.txt`, focused release
-evidence, and a small reviewer-manifest set. It excludes development and
-private-server helper scripts, internal planning/checkpoint files, raw runtime
-captures, backups, executables, and unrelated OddAPI/OddG material.
-
-## Pilot Evidence
-
-Live pilot evidence is generated from `reports/pilot/session.jsonl` with:
+Useful source scans:
 
 ```powershell
-python -m tools.Odd.PilotRecorder.pilot_report --input reports/pilot/session.jsonl --reports reports/pilot
+rg -n "QueueCommand|AddOutgoingPacket|InjectPacket|packet_out|packet_in" addon/ashita/oddq
+rg -n -i "socket|websocket|httpclient|localhost|127\.0\.0\.1" addon/ashita/oddq -g "*.lua"
+rg -n "ODD_SECURITY_NOTE|ODD_FILE_WRITE" addon/ashita/oddq/oddq.lua
 ```
 
-The JSONL contains route metrics, manual tester result notes, frame samples, and Lua memory measurements only. It must not contain chat logs, credentials, raw packet dumps, movement commands, target commands, trade commands, or packet mutations.
+The first two scans should return no executable runtime integration. Bundled
+guide records may contain `https://` source-attribution links; those strings are
+data, not network calls.
 
-## Current Review Notes
+## Player-facing smoke checklist
 
-This early contract pack declares the intended network calls, commands, cache writes, privacy counters, and sample route payloads before runtime code exists. Any later network call, packet read, file write, or command should be added to the review contract or generated manifests in the same slice as the code.
+Run this checklist manually in an approved environment:
+
+1. Load with `/addon load oddq` and open with `/odd`.
+2. Confirm the browser and loaded guide reuse the same `OddQ` window.
+3. Search for a guide, load it, and use Previous/Next.
+4. Confirm Settings only controls the objective pointer.
+5. In the objective zone, confirm a coordinate-backed step points toward its
+   target.
+6. In another zone, confirm the pointer shows destination-zone travel guidance.
+7. Confirm a manual step does not invent a direction.
+8. Close the window and confirm no OddQ UI remains open.
+
+## Release artifact
+
+The release zip should contain the installable `Ashita/addons/oddq` tree plus
+release notes, a file manifest, and `SHA256SUMS.txt`. It should not contain
+development caches, private paths, captures, credentials, executables, or
+unrelated projects.
+
+Verify the checksum manifest after extracting the archive and review
+`SECURITY.md`, `CATSEYEXI_HOSTED.md`, and the repository `../NOTICE.md`
+alongside the addon.
+
+## Evidence boundary
+
+Offline tests and layout probes establish source and package contracts. They do
+not establish live-client UX. RC3 makes no automated CatsEyeXI-window test claim;
+the player-facing checklist above remains a manual review step.
+
+## Known limitations
+
+- The pointer is guidance, not pathfinding or movement automation.
+- Some steps have only a destination zone or map-grid checkpoint.
+- Non-spatial steps intentionally remain manual.
+- Guide correctness and server-specific route quality should be reported and
+  improved incrementally during the prerelease.

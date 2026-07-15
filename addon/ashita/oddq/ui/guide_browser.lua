@@ -265,6 +265,17 @@ end
 local function build_results(state, category, limit)
     local max_count = math.max(1, math.floor(tonumber(limit) or 8))
     local page = math.max(1, math.floor(tonumber(state.guide_browser_page) or 1))
+    local cache_key = table.concat({
+        category.id,
+        category.mode,
+        trim(category.catalog_group),
+        search_query(state, category),
+        tostring(page),
+        tostring(max_count),
+    }, "\0")
+    if state._guide_browser_results_cache_key == cache_key then
+        return state._guide_browser_results_cache, page, state._guide_browser_results_cache_has_next
+    end
     local results = {}
     local query = search_query(state, category)
     local last_index = page * max_count
@@ -272,7 +283,11 @@ local function build_results(state, category, limit)
     for index = ((page - 1) * max_count) + 1, math.min(last_index, #rows) do
         table.insert(results, result_from_guide(rows[index]))
     end
-    return results, page, #rows > last_index
+    local has_next = #rows > last_index
+    state._guide_browser_results_cache_key = cache_key
+    state._guide_browser_results_cache = results
+    state._guide_browser_results_cache_has_next = has_next
+    return results, page, has_next
 end
 
 function guide_browser.model(state, limit)

@@ -362,6 +362,24 @@ local function steps_search_blob(entry)
     return table.concat(parts, " ")
 end
 
+local function copy_choices(choices)
+    local rows = {}
+    for _, choice in ipairs(type(choices) == "table" and choices or {}) do
+        if type(choice) == "table" then
+            table.insert(rows, {
+                zone_id = tonumber(choice.zone_id) or 0,
+                npc_name = safe_text(choice.npc_name),
+                mob_name = safe_text(choice.mob_name),
+                object_name = safe_text(choice.object_name),
+                target_name = safe_text(choice.target_name),
+                map_grid = safe_text(choice.map_grid),
+                position = copy_position(choice.position),
+            })
+        end
+    end
+    return rows
+end
+
 local function copy_steps(entry)
     local rows = {}
     if type(entry.steps) ~= "table" then
@@ -379,6 +397,10 @@ local function copy_steps(entry)
                 target_name = safe_text(step.target_name),
                 map_grid = safe_text(step.map_grid),
                 position = copy_position(step.position),
+                target_map_id = tonumber(step.target_map_id),
+                target_map_label = safe_text(step.target_map_label),
+                arrival_radius = tonumber(step.arrival_radius),
+                choices = copy_choices(step.choices),
                 instruction = safe_text(step.instruction),
                 required_items = copy_list(step.required_items),
                 required_key_items = copy_list(step.required_key_items),
@@ -389,8 +411,14 @@ local function copy_steps(entry)
     return rows
 end
 
+local search_blob_cache = {}
+
 local function search_blob(entry)
-    return table.concat({
+    local cached = search_blob_cache[entry]
+    if cached ~= nil then
+        return cached
+    end
+    local blob = table.concat({
         safe_text(entry.name),
         safe_text(entry.objective_id),
         safe_text(entry.quest_id),
@@ -406,6 +434,8 @@ local function search_blob(entry)
         prerequisite_detail_label(entry),
         steps_search_blob(entry),
     }, " "):lower()
+    search_blob_cache[entry] = blob
+    return blob
 end
 
 local function normalize_search_text(value)
@@ -981,8 +1011,7 @@ local function sorted_entries(entries)
     return entries
 end
 
-local function sorted_insert(results, item)
-    table.insert(results, item)
+local function sort_scored_results(results)
     table.sort(results, function(left, right)
         if left.score ~= right.score then
             return left.score < right.score
@@ -1003,6 +1032,7 @@ local function sorted_insert(results, item)
         end
         return left_name < right_name
     end)
+    return results
 end
 
 function objective_catalog.normalize_mode(mode)
@@ -1065,13 +1095,14 @@ function objective_catalog.search(query, mode, limit, catalog_group)
         if matches_mode(entry, mode) and matches_catalog_group(entry, catalog_group) then
             local score = search_score(entry, text)
             if score ~= nil then
-                sorted_insert(scored, {
+                table.insert(scored, {
                     score = score,
                     entry = entry,
                 })
             end
         end
     end
+    sort_scored_results(scored)
     local results = {}
     for index, item in ipairs(scored) do
         if index > max_count then
@@ -1400,21 +1431,6 @@ function objective_catalog.find_by_objective_id(objective_id)
     return nil
 end
 
-local transport_flag_list_keys = {
-    "home_points",
-    "survival_guides",
-    "outposts",
-    "teleport_crystals",
-    "exp_guides",
-    "city_teleporters",
-    "spells",
-    "items",
-}
-
-local function contract_position(position)
-    return copy_position(position) or { x = 0, y = 0, z = 0 }
-end
-
 local function contract_steps(steps)
     local rows = {}
     for _, step in ipairs(steps or {}) do
@@ -1430,21 +1446,6 @@ local function contract_steps(steps)
         })
     end
     return rows
-end
-
-local function contract_transport_flags(flags)
-    flags = type(flags) == "table" and flags or {}
-    local result = {}
-    for _, key in ipairs(transport_flag_list_keys) do
-        result[key] = copy_list(flags[key])
-    end
-
-    local cooldowns = type(flags.cooldowns) == "table" and flags.cooldowns or {}
-    result.cooldowns = {
-        warp_ring_seconds_remaining = math.floor(tonumber(cooldowns.warp_ring_seconds_remaining) or 0),
-        instant_warp_scroll_count = math.floor(tonumber(cooldowns.instant_warp_scroll_count) or 0),
-    }
-    return result
 end
 
 function objective_catalog.to_runtime_objective(objective, entry)
@@ -1471,11 +1472,10 @@ function objective_catalog.to_runtime_objective(objective, entry)
     return runtime
 end
 
-function objective_catalog.to_objective_plan(entry, state)
+function objective_catalog.to_objective_plan(entry)
     if type(entry) ~= "table" then
         return nil
     end
-    state = state or {}
     local objective_id = safe_text(entry.objective_id)
     if objective_id == "" then
         return nil
@@ -1495,7 +1495,7 @@ function objective_catalog.to_objective_plan(entry, state)
 
     return {
         schema = "objective_plan.v1",
-        selection_note = "targeted OddQ local guide",
+        selection_note = "selected OddQ local guide",
         actions = {
             {
                 mode = mode,
@@ -1508,7 +1508,7 @@ function objective_catalog.to_objective_plan(entry, state)
                     step_id = safe_text(first_step.step_id or entry.first_step_id),
                     step_kind = safe_text(first_step.step_kind or entry.first_step_kind),
                     zone_id = tonumber(first_step.zone_id or entry.first_zone_id) or 0,
-                    position = contract_position(first_step.position),
+                    position = copy_position(first_step.position),
                     npc_name = first_target_name,
                     map_grid = safe_text(first_step.map_grid or entry.first_map_grid),
                     instruction = safe_text(first_step.instruction),
@@ -1525,16 +1525,6 @@ function objective_catalog.to_objective_plan(entry, state)
                         run_id = "odddb-lua-export",
                         validated = safe_text(entry.verification_status) == "script_verified",
                         status = safe_text(entry.verification_status),
-                    },
-                    route_request_hint = {
-                        server_profile = safe_text(state.server_profile),
-                        game_mode = safe_text(state.game_mode),
-                        current_zone_id = tonumber(state.current_zone_id) or 0,
-                        current_position = contract_position(state.current_position),
-                        target_objective_id = objective_id,
-                        key_items = copy_list(state.key_items),
-                        known_unlocks_hash = safe_text(state.known_unlocks_hash),
-                        known_transport_flags = contract_transport_flags(state.known_transport_flags),
                     },
                 },
             },
@@ -1591,7 +1581,7 @@ function objective_catalog.render_results(entries, options)
         table.insert(lines, objective_catalog.result_line(entry, index))
     end
 
-    table.insert(lines, "Use /odd open <number> or /odd <number> to load a result; /odd jobs ranger or /odd jobs drg also load job guides.")
+    table.insert(lines, "Use /odd <guide name> to load a guide; /odd jobs ranger or /odd jobs drg also load job guides.")
     return table.concat(lines, "\n")
 end
 

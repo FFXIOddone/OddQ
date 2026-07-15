@@ -5116,6 +5116,23 @@ return {
     game_modes = {"ACE", "CW", "WEW"},
     source_url = "https://www.bg-wiki.com/ffxi/Bastok_Mission_1-1",
     steps = {{
+    choices = {{
+    map_grid = "L-7",
+    npc_name = "Argus (NPC)",
+    zone_id = 236,
+  }, {
+    map_grid = "D-11",
+    npc_name = "Cleades",
+    zone_id = 235,
+  }, {
+    map_grid = "H-10",
+    npc_name = "Rashid",
+    zone_id = 234,
+  }, {
+    map_grid = "J-8",
+    npc_name = "Malduc",
+    zone_id = 237,
+  }},
     instruction = "Speak to any Bastokan Gate Guard and accept the Mission. If the mission does not initiate, talk to the same NPC twice!",
     map_grid = "L-7 / D-11 / H-10 / J-8",
     notes = {},
@@ -5365,6 +5382,19 @@ return {
     step_kind = "trade",
     zone_id = 0,
   }, {
+    choices = {{
+    map_grid = "I-6",
+    npc_name = "Crag of Dem",
+    zone_id = 108,
+  }, {
+    map_grid = "K-8",
+    npc_name = "Crag of Holla",
+    zone_id = 102,
+  }, {
+    map_grid = "I-6",
+    npc_name = "Crag of Mea",
+    zone_id = 117,
+  }},
     instruction = "You will have to obtain a Faded Crystal and trade it to Cid to receive the C. L. report.",
     map_grid = "I-6 / K-8 / I-6",
     notes = {"Faded Crystal Faded Crystals are not Exclusive, and can be traded or purchased from Bazaars or the Auction House. ( ➞ Others ➞ Misc. 1)", "Alternatively, it can be obtained by trading a Synthesis Crystal to any Crag's Telepoint:", "You can easily teleport to any of these zones by talking to a Unity NPC and using the Lvl 99 Unity Warps.", "(Optional): Talk to Naji."},
@@ -12211,6 +12241,19 @@ return {
     step_kind = "objective_override",
     zone_id = 230,
   }, {
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Speak to any San d'Orian Gate Guard to begin this Mission. If the mission does not initiate, talk to the same NPC twice!",
     map_grid = "K-10 / F-9 / D-8",
     notes = {},
@@ -12234,6 +12277,19 @@ return {
     step_kind = "travel",
     zone_id = 100,
   }, {
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "After you receive an Orcish Axe return to the Gate Guard and trade them the Orcish Axe to finish the Mission.",
     map_grid = "K-10 / F-9 / D-8",
     notes = {},
@@ -12355,6 +12411,19 @@ return {
     game_modes = {"ACE", "CW", "WEW"},
     source_url = "https://www.bg-wiki.com/ffxi/San_d%27Oria_Mission_1-2",
     steps = {{
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Speak to any San d'Orian Gate Guard, and select \"Bat Hunt\" to begin this Mission. If the mission does not initiate, talk to the same NPC twice!",
     map_grid = "K-10 / F-9 / D-8",
     notes = {},
@@ -12400,6 +12469,19 @@ return {
     step_kind = "inspect",
     zone_id = 190,
   }, {
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Return to a Gate Guard and trade them the Orcish Mail Scales to complete the Mission.",
     map_grid = "K-10 / F-9 / D-8",
     notes = {},
@@ -12439,6 +12521,19 @@ return {
     game_modes = {"ACE", "CW", "WEW"},
     source_url = "https://www.bg-wiki.com/ffxi/San_d%27Oria_Mission_1-3",
     steps = {{
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Talk to any Gate Guard and accept the Mission. If the mission does not initiate, talk to the same NPC twice!",
     map_grid = "K-10 / F-9 / D-8",
     notes = {},
@@ -12505,6 +12600,19 @@ return {
     step_kind = "fight",
     zone_id = 140,
   }, {
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Return to a Gate Guard to complete the Mission and receive Rank 2.",
     map_grid = "K-10 / F-9 / D-8",
     notes = {"(Optional): There is an additional cutscene at Arnau after speaking with the Gate Guard."},
@@ -12544,6 +12652,19 @@ return {
     game_modes = {"ACE", "CW", "WEW"},
     source_url = "https://www.bg-wiki.com/ffxi/San_d%27Oria_Mission_2-1",
     steps = {{
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Speak to any Gate Guard and accept the mission. If the mission does not initiate, talk to the same NPC twice!",
     map_grid = "K-10 / F-9 / D-8",
     notes = {},
@@ -12633,6 +12754,19 @@ return {
     step_kind = "travel",
     zone_id = 102,
   }, {
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Return to a Gate Guard to complete the mission.",
     map_grid = "K-10 / F-9 / D-8",
     notes = {},
@@ -12672,6 +12806,19 @@ return {
     game_modes = {"ACE", "CW", "WEW"},
     source_url = "https://www.bg-wiki.com/ffxi/San_d%27Oria_Mission_2-2",
     steps = {{
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Talk to any Gate Guard and accept the Mission. If the mission does not initiate, talk to the same NPC twice!",
     map_grid = "K-10 / F-9 / D-8",
     notes = {"There are two in Southern San d'Oria, Ambrotien at (K-6) and Endracion at (F-9). There is also a gate guard in Northern San d'Oria, Grilau at (D-8).", "A map of Davoi can be purchased for 3000 Gil from Elesca at (I-8) of North San d'Oria or Violitte at (G-10) of Southern San d'Oria, but it is not required."},
@@ -12727,6 +12874,19 @@ return {
     step_kind = "talk",
     zone_id = 149,
   }, {
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Return to a Gate Guard.",
     map_grid = "K-10 / F-9 / D-8",
     notes = {},
@@ -12832,6 +12992,19 @@ return {
     step_kind = "instruction",
     zone_id = 116,
   }, {
+    choices = {{
+    map_grid = "I-9",
+    npc_name = "Savae E Paleade",
+    zone_id = 237,
+  }, {
+    map_grid = "G-9",
+    npc_name = "Grohm",
+    zone_id = 237,
+  }, {
+    map_grid = "F/G-10",
+    npc_name = "Mourices",
+    zone_id = 241,
+  }},
     instruction = "The Bastok Path may be quicker due to the ease of obtaining the item involved.",
     map_grid = "",
     notes = {"Start in Bastok Metalworks at the San d'Orian Consulate on the top floor. Speak with Savae E Paleade at (I-9), Pius at (J-8), then Grohm at (G-9).", "Required item route: after Grohm asks for Mythril Sand, fast path is buying Mine Gravel from the Auction House under Others > Misc. 1.", "If the Auction House is empty, buy Pickaxes from Boytz in Bastok Mines (H-7) or Numa in Port Bastok (E-7), then mine Mythril Seams in Palborough Mines; common seams are at (F-7) on map 1 and near (I-8).", "Enter Palborough Mines from North Gustaberg (K-3). With Mine Gravel in inventory, go to the elevator at (I-8), ride up to map 3, and find the Refiner Lid at (I-6).", "Trade Mine Gravel to the Refiner Lid, pull the upper Refiner Lever, drop down, then pull the lower Refiner Lever to receive Onz of Mythril Sand.", "Return to Savae E Paleade in the Bastok consulate and trade the Mythril Sand.", "Windurst leg after Bastok: go to the San d'Orian Consulate in Windurst Woods (F/G-10), speak with Mourices, then go to Heavens Tower (H-7) and speak with Kupipi for the Dark key.", "Enter Giddeus from West Sarutabaruta (F-8). If you need a map first, buy one from Mhoji Roccoruh in Port Windurst (G-9) or Pehki Machumaht in Windurst Woods (H-11).", "Proceed to Balga's Dais at (F-12), enter the BCNM, and defeat Searcher and Black Dragon. Bring Antidotes or poison removal for Black Dragon's poison.", "After the BCNM, receive the Kindred crest, return to Mourices in the Windurst consulate for the Kindred report, then Return to San d'Oria and speak with Halver in Chateau d'Oraguille to complete the mission."},
@@ -12843,6 +13016,19 @@ return {
     step_kind = "instruction",
     zone_id = 0,
   }, {
+    choices = {{
+    map_grid = "F/G-10",
+    npc_name = "Mourices",
+    zone_id = 241,
+  }, {
+    map_grid = "H-7",
+    npc_name = "Kupipi",
+    zone_id = 242,
+  }, {
+    map_grid = "I-9",
+    npc_name = "Savae E Paleade",
+    zone_id = 237,
+  }},
     instruction = "The Windurst Path final BCNM may be a bit easier as the Petrify AoE will not be used.",
     map_grid = "",
     notes = {"Start in Windurst Woods at the San d'Orian Consulate (F/G-10). Speak with Mourices, then go to Heavens Tower (H-7) and speak with Kupipi to receive the Shield offering.", "Required item route: travel to Giddeus from West Sarutabaruta (F-8), go to (G-8), drop down, then head north to (G/H-7).", "Kill Zhuu Buxu the Silent for a 100% Parana Shield drop, wait around 5 minutes for respawn, then kill him again for the second shield. Watch for Yagudo aggro and links while waiting.", "Head west to Uu Zhoumo at (F-7) and offer the Shield offering, then return to the San d'Orian Consulate in Windurst Woods and trade both to Mourices.", "Bastok leg after Windurst: go to Bastok Metalworks, enter the San d'Orian Consulate on the top floor, speak with Savae E Paleade at (I-9), Pius at (J-8), then Grohm at (G-9).", "Travel to Palborough Mines from North Gustaberg (K-3), use the elevator at (I-8), then continue to Waughroon Shrine at (H-10).", "Enter the BCNM and defeat Seeker and Dark Dragon. Dark Dragon can use Petro Eyes to inflict Petrify, so bring Stona support or petrification recovery if available.", "After the fight, you may use the boat at Palborough Mines (H-8) to reach Zeruhn Mines and Bastok Mines quickly.", "Return to Savae E Paleade in the Bastok consulate for the Kindred report, then Return to San d'Oria and speak with Halver in Chateau d'Oraguille to complete the mission."},
@@ -12882,6 +13068,19 @@ return {
     game_modes = {"ACE", "CW", "WEW"},
     source_url = "https://www.bg-wiki.com/ffxi/San_d%27Oria_Mission_3-1",
     steps = {{
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Trade enough Crystals to a Conquest NPC to raise your Rank bar if needed, then accept the mission from any San d'Orian Gate Guard.",
     map_grid = "K-10 / F-9 / D-8",
     notes = {"Gate Guard options: Ambrotien in Southern San d'Oria (K-10), Endracion in Southern San d'Oria (F-9), or Grilau in Northern San d'Oria (D-8)."},
@@ -12965,6 +13164,19 @@ return {
     game_modes = {"ACE", "CW", "WEW"},
     source_url = "https://www.bg-wiki.com/ffxi/San_d%27Oria_Mission_3-2",
     steps = {{
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Talk to any Gate Guard and accept the Mission. If the mission does not initiate, talk to the same NPC twice!",
     map_grid = "K-10 / F-9 / D-8",
     notes = {"There are two in Southern San d'Oria, Ambrotien at (K-6) and Endracion at (F-9). There is also a gate guard in Northern San d'Oria, Grilau at (D-8)."},
@@ -12987,6 +13199,19 @@ return {
     step_kind = "instruction",
     zone_id = 104,
   }, {
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Trade the Crystal Bass to the Gate Guard.",
     map_grid = "K-10 / F-9 / D-8",
     notes = {},
@@ -13198,6 +13423,15 @@ return {
     step_kind = "trade",
     zone_id = 244,
   }, {
+    choices = {{
+    map_grid = "I-8",
+    npc_name = "Paya-Sabya",
+    zone_id = 244,
+  }, {
+    map_grid = "H-9",
+    npc_name = "Muckvix",
+    zone_id = 245,
+  }},
     instruction = "Speak with Paya-Sabya in Upper Jeuno (I-8), then Muckvix inside Muckvix's Junk Shop in Lower Jeuno (H-9) for Yagudo torch.",
     map_grid = "I-8 / H-9",
     notes = {"Castle Oztroja Magicite can glow ominously if this cutscene chain was skipped; finish both NPCs before retrying the Altar Room."},
@@ -13318,6 +13552,19 @@ return {
     target_name = "Chateau d'Oraguille zone-in",
     zone_id = 233,
   }, {
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Visit any Gate Guard and accept the Mission. If the mission does not initiate, talk to the same NPC twice!",
     map_grid = "K-10 / F-9 / D-8",
     notes = {},
@@ -13710,6 +13957,19 @@ return {
     step_kind = "instruction",
     zone_id = 190,
   }, {
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Talk to any Gate Guard. A cutscene will play out saying they sent the book to scholars to decipher.",
     map_grid = "K-10 / F-9 / D-8",
     notes = {},
@@ -13721,6 +13981,19 @@ return {
     step_kind = "talk",
     zone_id = 0,
   }, {
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "You must talk to the Gate Guard once more to have them tell you that the deciphering will take some time.",
     map_grid = "K-10 / F-9 / D-8",
     notes = {},
@@ -13732,6 +14005,19 @@ return {
     step_kind = "instruction",
     zone_id = 0,
   }, {
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Zone and talk to the Guard again who will tell you to see Prince Trion.",
     map_grid = "H-7",
     notes = {},
@@ -13766,6 +14052,19 @@ return {
     step_kind = "talk",
     zone_id = 190,
   }, {
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Return to a Gate Guard to complete the Mission.",
     map_grid = "K-10 / F-9 / D-8",
     notes = {},
@@ -13925,6 +14224,19 @@ return {
     game_modes = {"ACE", "CW", "WEW"},
     source_url = "https://www.bg-wiki.com/ffxi/San_d%27Oria_Mission_7-2",
     steps = {{
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Speak with a Gate Guard who will instruct you to go to the Garden in Chateau d'Oraguille.",
     map_grid = "K-10 / F-9 / D-8",
     notes = {},
@@ -13948,6 +14260,19 @@ return {
     target_name = "Queen Leaute's Garden",
     zone_id = 233,
   }, {
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Return to the Gate Guard to receive the Mission.",
     map_grid = "K-10 / F-9 / D-8",
     notes = {},
@@ -14006,6 +14331,19 @@ return {
     target_name = "Horlais Peak Burning Circle",
     zone_id = 139,
   }, {
+    choices = {{
+    map_grid = "K-10",
+    npc_name = "Ambrotien",
+    zone_id = 230,
+  }, {
+    map_grid = "F-9",
+    npc_name = "Endracion",
+    zone_id = 230,
+  }, {
+    map_grid = "D-8",
+    npc_name = "Grilau",
+    zone_id = 231,
+  }},
     instruction = "Head back to San d'Oria and speak to any Gate Guard to finish the mission.",
     map_grid = "K-10 / F-9 / D-8",
     notes = {},
@@ -14662,6 +15000,23 @@ return {
     game_modes = {"ACE", "CW", "WEW"},
     source_url = "https://www.bg-wiki.com/ffxi/Windurst_Mission_1-1",
     steps = {{
+    choices = {{
+    map_grid = "F-5",
+    npc_name = "Mokyokyo",
+    zone_id = 238,
+  }, {
+    map_grid = "B-5",
+    npc_name = "Janshura-Rashura",
+    zone_id = 240,
+  }, {
+    map_grid = "K-10",
+    npc_name = "Rakoh Buuma",
+    zone_id = 241,
+  }, {
+    map_grid = "H-7",
+    npc_name = "Zokima-Rokima",
+    zone_id = 239,
+  }},
     instruction = "Speak to any Windurstian Gate Guard, and accept the Mission. If the mission does not initiate, talk to the same NPC twice!",
     map_grid = "F-5 / B-5 / K-10 / H-7",
     notes = {},
@@ -14800,6 +15155,23 @@ return {
     game_modes = {"ACE", "CW", "WEW"},
     source_url = "https://www.bg-wiki.com/ffxi/Windurst_Mission_1-2",
     steps = {{
+    choices = {{
+    map_grid = "F-5",
+    npc_name = "Mokyokyo",
+    zone_id = 238,
+  }, {
+    map_grid = "B-5",
+    npc_name = "Janshura-Rashura",
+    zone_id = 240,
+  }, {
+    map_grid = "K-10",
+    npc_name = "Rakoh Buuma",
+    zone_id = 241,
+  }, {
+    map_grid = "H-7",
+    npc_name = "Zokima-Rokima",
+    zone_id = 239,
+  }},
     instruction = "Accept the Mission from any Gate Guard. If the mission does not initiate, talk to the same NPC twice!",
     map_grid = "F-5 / B-5 / K-10 / H-7",
     notes = {},
@@ -14938,6 +15310,23 @@ return {
     game_modes = {"ACE", "CW", "WEW"},
     source_url = "https://www.bg-wiki.com/ffxi/Windurst_Mission_1-3",
     steps = {{
+    choices = {{
+    map_grid = "F-5",
+    npc_name = "Mokyokyo",
+    zone_id = 238,
+  }, {
+    map_grid = "B-5",
+    npc_name = "Janshura-Rashura",
+    zone_id = 240,
+  }, {
+    map_grid = "K-10",
+    npc_name = "Rakoh Buuma",
+    zone_id = 241,
+  }, {
+    map_grid = "H-7",
+    npc_name = "Zokima-Rokima",
+    zone_id = 239,
+  }},
     instruction = "Accept the Mission from any Gate Guard. If the mission does not initiate, talk to the same NPC twice!",
     map_grid = "F-5 / B-5 / K-10 / H-7",
     notes = {},

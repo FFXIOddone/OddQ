@@ -1,64 +1,52 @@
-# CatseyeXI Hosted Profile
+# CatsEyeXI Runtime Profile
 
-`CATSEYEXI_HOSTED` is the staff-safe OddQ distribution profile. It keeps every hosted endpoint and public key as an `ODD_CXI_REPLACE_*` marker until CatseyeXI staff supplies the approved values.
+OddQ RC3 uses one CatsEyeXI profile: a local Ashita addon with bundled guide
+data. There are no hosted endpoints, replacement keys, allowlists, bridge
+settings, backend services, or server changes to configure.
 
-## Required Replace Markers
+## Install surface
 
-- `ODD_CXI_REPLACE_SERVER_NAME`
-- `ODD_CXI_REPLACE_API_BASE_URL`
-- `ODD_CXI_REPLACE_ROUTE_ENDPOINT`
-- `ODD_CXI_REPLACE_MANIFEST_ENDPOINT`
-- `ODD_CXI_REPLACE_ALLOWED_HOSTNAMES`
-- `ODD_CXI_REPLACE_PUBLIC_SIGNING_KEY`
-- `ODD_CXI_REPLACE_PRIVACY_POLICY_URL`
-- `ODD_CXI_REPLACE_SUPPORT_URL`
-- `ODD_CXI_REPLACE_DATA_RETENTION_DAYS`
-- `ODD_CXI_REPLACE_ENABLE_PATH_INGEST`
-- `ODD_CXI_REPLACE_ENABLE_AUTO_UPDATE_CHECK`
-
-## Endpoint Lockout
-
-The hosted distribution template must not bake in third-party API URLs, analytics URLs, or fallback route servers. Local addon-to-bridge traffic may use `127.0.0.1`; external bridge-to-backend route and manifest URLs must remain `ODD_CXI_REPLACE_*` values in source review artifacts.
-
-At runtime, the bridge uses its configured hostname allowlist and HTTPS-only endpoint checks. Non-allowlisted hosts are rejected and logged as `rejected_endpoint`.
-
-## Generated Review Bundle
-
-Regenerate the hosted review bundle with:
-
-```powershell
-python tools/Odd.ManifestBuilder/manifest_builder.py --contract tools/oddq_review/review_contract.json --docs docs --markers-root .
+```text
+Ashita/addons/oddq
 ```
 
-The bundle includes:
+The addon is loaded with `/addon load oddq` and controlled through `/odd`. It
+does not install an executable, DLL, Windows service, scheduled task, or server
+module.
 
-- `docs/GENERATED_NETWORK_MANIFEST.json`
-- `docs/GENERATED_PACKET_MANIFEST.json`
-- `docs/GENERATED_FILESYSTEM_MANIFEST.json`
-- `docs/GENERATED_COMMAND_MANIFEST.json`
-- `docs/GENERATED_DEPENDENCY_MANIFEST.json`
-- `docs/GENERATED_BENCHMARK_REPORT.md`
-- `docs/GENERATED_PRIVACY_REPORT.md`
-- `docs/GENERATED_AUDIT_REPORT.json`
-- `docs/GENERATED_CXI_MARKERS.json`
+## Client boundary
 
-## Reproducible Build
+OddQ uses Ashita's local APIs to read the current zone, position, heading, and
+level for display. It does not register packet handlers, send game commands,
+control other addons, or automate player actions.
 
-From a clean checkout:
+Its only persistent files are first-launch state and pointer preferences under
+`config/addons/oddq` in the active Ashita installation.
+
+## Staff review checklist
+
+- Confirm the archive's addon tree matches `MANIFEST.json` and
+  `SHA256SUMS.txt`.
+- Confirm no network, bridge, backend, updater, or telemetry module is shipped.
+- Confirm no packet or outgoing-command API is referenced.
+- Confirm the one-window browser/guide flow, optional pointer, and Settings
+  popup are the complete UI surface.
+- Confirm a missing coordinate remains a checkpoint or manual cue.
+- Confirm the addon does not automatically advance a guide or claim arrival.
+
+Useful offline scans:
 
 ```powershell
-$env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')
-python -m unittest discover tests -v
-python tools/Odd.ManifestBuilder/manifest_builder.py --contract tools/oddq_review/review_contract.json --docs docs --markers-root .
-dotnet test
-dotnet publish bridge/Odd.Bridge/Odd.Bridge.csproj -c Release -o build/CATSEYEXI_HOSTED/bridge
-dotnet publish backend/Odd.Api/Odd.Api.csproj -c Release -o build/CATSEYEXI_HOSTED/backend
+rg -n "QueueCommand|AddOutgoingPacket|InjectPacket|packet_out|packet_in" Ashita/addons/oddq
+rg -n -i "socket|websocket|httpclient|localhost|127\.0\.0\.1" Ashita/addons/oddq -g "*.lua"
 ```
 
-Before approval packaging, staff should run:
+Bundled guide records may include web URLs as source attribution. OddQ does not
+fetch those URLs at runtime.
 
-```powershell
-rg -F "ODD_CXI_REPLACE_" .
-```
+## Validation boundary
 
-Only CatseyeXI-owned deployment values should replace those markers.
+Source scans, Lua syntax checks, unit tests, layout probes, and archive checks
+are offline evidence. They do not prove live-client UI behavior. CatsEyeXI
+window interaction is not automated for RC3; in-game review is manual and must
+be performed only by an authorized tester.

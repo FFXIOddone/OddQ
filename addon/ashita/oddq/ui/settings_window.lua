@@ -10,11 +10,10 @@ end
 function settings_window.render_state(state)
     state = state or {}
     local prefs = state.preferences or {}
-    local integrations = prefs.integrations or {}
+    local display = prefs.display or {}
     local lines = {
         "OddQ Settings",
-        "Allow FilterScan Commands: " .. bool_text(integrations.allow_filterscan_command),
-        "Allow MiniMap Commands: " .. bool_text(integrations.allow_minimap_command),
+        "Show Objective Pointer: " .. bool_text(display.show_pointer ~= false),
     }
     return table.concat(lines, "\n")
 end
@@ -36,31 +35,27 @@ function settings_window.render(imgui, state)
         return
     end
 
-    local layout = (skin.layout and skin.layout.tuner_window) or { width = 520.0, height = 520.0 }
+    local layout = (skin.layout and skin.layout.settings_window) or { width = 420.0, height = 170.0 }
     if imgui.SetNextWindowSize ~= nil then
         imgui.SetNextWindowSize({ layout.width, layout.height }, ImGuiCond_FirstUseEver)
     end
 
     local pushed = skin.push_window(imgui)
-    local visible, open = window_state.begin(imgui, "OddQ Settings", true, 0)
+    local visible, open = window_state.begin(imgui, "OddQ Settings##oddq_mvp", true, 0)
     state.settings_open = open
-    if not open then
-        state.main_view = "browse"
-        state.main_window_open = true
-    end
     if visible then
         local prefs = state.preferences or {}
         prefs.display = prefs.display or {}
-        prefs.integrations = prefs.integrations or {}
-        prefs.safety = prefs.safety or {}
         state.preferences = prefs
 
-        imgui.Text("Optional command permissions")
+        imgui.Text("Guide display")
         if imgui.TextWrapped ~= nil then
-            imgui.TextWrapped("OddQ guidance is read-only. These permissions only allow the matching button inside a guide.")
+            imgui.TextWrapped("The pointer shows the current step when coordinates are known and travel guidance when you are in another zone.")
         end
-        checkbox(imgui, "Allow FilterScan Commands", prefs.integrations, "allow_filterscan_command")
-        checkbox(imgui, "Allow MiniMap Commands", prefs.integrations, "allow_minimap_command")
+        if checkbox(imgui, "Show Objective Pointer", prefs.display, "show_pointer") then
+            state.arrow = state.arrow or {}
+            state.arrow.visible = prefs.display.show_pointer == true
+        end
     end
     imgui.End()
     skin.pop(imgui, pushed)

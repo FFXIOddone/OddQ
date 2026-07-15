@@ -1,6 +1,5 @@
 local guide_browser = require("ui/guide_browser")
 local route_window = require("ui/route_window")
-local assist_ui = require("ui/assist_hub")
 local imgui_text = require("ui/imgui_text")
 local skin = require("ui/skin")
 local window_state = require("ui/window_state")
@@ -71,7 +70,7 @@ function main_window.render_state(state, objective, route, active_segment_index)
     state = state or {}
     local view = normalized_view(state, objective)
     local lines = {
-        "OddQ Guides",
+        "OddQ",
         "View: " .. view,
     }
     if view == "guide" then
@@ -117,21 +116,29 @@ local function render_resume_strip(imgui, state, objective)
 end
 
 local function render_browser(imgui, state, objective, on_command)
+    if skin.button(imgui, "Settings##oddq_open_settings", "secondary") then
+        state.settings_open = true
+    end
+    if imgui.Separator ~= nil then
+        imgui.Separator()
+    end
     render_resume_strip(imgui, state, objective)
     guide_browser.render(imgui, state, on_command)
 end
 
-local function render_guide(imgui, state, objective, route, active_segment_index, on_command, assist_state, on_assist_action)
+local function render_guide(imgui, state, objective, route, active_segment_index, on_command)
     if skin.button(imgui, "Back to Guides##oddq_back_to_guides", "secondary") then
         state.main_view = "browse"
         return
     end
-    skin.text_wrapped(imgui, guide_title(objective), "title")
+    same_line(imgui, 8.0)
+    if skin.button(imgui, "Settings##oddq_open_settings", "secondary") then
+        state.settings_open = true
+    end
     if imgui.Separator ~= nil then
         imgui.Separator()
     end
     route_window.render(imgui, route_state(state, route, objective, active_segment_index), on_command)
-    assist_ui.render_inline(imgui, assist_state, on_assist_action)
 end
 
 function main_window.render(
@@ -140,10 +147,7 @@ function main_window.render(
     objective,
     route,
     active_segment_index,
-    guided_menu_text,
-    on_command,
-    assist_state,
-    on_assist_action
+    on_command
 )
     if imgui == nil or imgui.Begin == nil or imgui.End == nil then
         return
@@ -153,9 +157,9 @@ function main_window.render(
     end
 
     local layout = skin.layout.main_window or {}
-    imgui.SetNextWindowSize({ layout.width or 1040.0, layout.height or 620.0 }, ImGuiCond_FirstUseEver)
+    imgui.SetNextWindowSize({ layout.width or 820.0, layout.height or 560.0 }, ImGuiCond_FirstUseEver)
     local pushed = skin.push_window(imgui)
-    local visible, open = window_state.begin(imgui, "OddQ Guides", true, 0)
+    local visible, open = window_state.begin(imgui, "OddQ", true, 0)
     if not open then
         state.main_window_open = false
         dispatch_command(on_command, { "close" })
@@ -164,7 +168,7 @@ function main_window.render(
         local view = normalized_view(state, objective)
         state.main_view = view
         if view == "guide" then
-            render_guide(imgui, state, objective, route, active_segment_index, on_command, assist_state, on_assist_action)
+            render_guide(imgui, state, objective, route, active_segment_index, on_command)
         else
             render_browser(imgui, state, objective, on_command)
         end
