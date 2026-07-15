@@ -1,0 +1,25 @@
+{
+  "dependencies": [
+    {
+      "name": "Ashita v4",
+      "scope": "runtime addon host",
+      "source": "CatseyeXI client Ashita installation"
+    },
+    {
+      "name": ".NET 8 SDK",
+      "scope": "bridge/backend build and tests",
+      "source": "dotnet --info"
+    },
+    {
+      "name": "Python 3.12",
+      "scope": "review, data, packet replay, route benchmark, and manifest tooling",
+      "source": "python --version"
+    },
+    {
+      "name": "LuaJIT",
+      "scope": "Ashita addon syntax verification",
+      "source": "luajit.exe -b addon/ashita/oddq/oddq.lua NUL"
+    }
+  ],
+  "profile": "CATSEYEXI_HOSTED"
+}

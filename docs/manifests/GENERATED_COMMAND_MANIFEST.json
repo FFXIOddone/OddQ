@@ -1,0 +1,74 @@
+{
+  "commands": [
+    {
+      "command": "/odd",
+      "purpose": "open OddQ UI",
+      "side_effects": "none"
+    },
+    {
+      "command": "/odd recalc",
+      "purpose": "request a new locked route from the configured bridge",
+      "side_effects": "network route request"
+    },
+    {
+      "command": "/odd mission sandy1 start|axe|turnin|turnin-north",
+      "purpose": "select a provisional San d'Oria Rank 1-1 mission step and request a locked route from the local bridge",
+      "side_effects": "local tracked objective selection plus localhost route request; no movement, no targeting, no trading, no packet mutation, and no arrival claim"
+    },
+    {
+      "command": "/odd mission auto",
+      "purpose": "autodetect a supported current mission step and request a locked guidance route from the local bridge",
+      "side_effects": "read-only player memory, read-only incoming mission packet state, local tracked objective selection, and localhost route request; no movement, no targeting, no trading, no packet mutation, and no arrival claim"
+    },
+    {
+      "command": "/odd route list|port|status",
+      "purpose": "list, load, or inspect a verified live guide route such as the Northern San d'Oria to Port San d'Oria route",
+      "side_effects": "local route display state only plus local pilot frame evidence when the operator starts a pilot session; no movement, no targeting, no trading, no packet mutation, and no arrival claim"
+    },
+    {
+      "command": "/odd route test start|status|reset",
+      "purpose": "start, inspect, or reset private-server route-test waypoint and zone progress evidence for a loaded live guide route",
+      "side_effects": "local JSONL write only while a pilot session is active; no movement, no targeting, no trading, no packet mutation, and no route-quality claim"
+    },
+    {
+      "command": "/odd track",
+      "purpose": "request the next eligible objective for guidance from the local bridge",
+      "side_effects": "local objective guidance only plus localhost objective request; no movement, no targeting, no trading, no packet mutation, and no arrival claim"
+    },
+    {
+      "command": "/odd plan",
+      "purpose": "request mission, quest, and EXP guidance recommendations from the local bridge",
+      "side_effects": "local objective plan guidance only plus localhost objective plan request; no movement, no targeting, no trading, no packet mutation, and no arrival claim"
+    },
+    {
+      "command": "/odd done",
+      "purpose": "mark the current mission or quest complete in local OddQ guidance state",
+      "side_effects": "local guidance completion ledger write only; no movement, no targeting, no trading, no packet mutation, and no arrival claim"
+    },
+    {
+      "command": "/odd undo",
+      "purpose": "remove the current mission or quest from local OddQ guidance completion state",
+      "side_effects": "local guidance completion ledger write only; no movement, no targeting, no trading, no packet mutation, and no arrival claim"
+    },
+    {
+      "command": "/odd next",
+      "purpose": "advance the displayed route segment for guidance",
+      "side_effects": "local display state only; no movement, no targeting, no trading, no packet mutation, and no arrival claim"
+    },
+    {
+      "command": "/odd previous",
+      "purpose": "return to the prior displayed route segment for guidance",
+      "side_effects": "local display state only; no movement, no targeting, no trading, no packet mutation, and no arrival claim"
+    },
+    {
+      "command": "/odd pilot",
+      "purpose": "start, stop, annotate, and sample local live pilot evidence",
+      "side_effects": "local JSONL write only while a pilot session is active"
+    },
+    {
+      "command": "/odd pilot batch [count] [delay_seconds]",
+      "purpose": "record repeated route-generation/transport evidence against the local bridge/backend",
+      "side_effects": "local JSONL write and localhost route requests only; no movement, no targeting, no trading, no packet mutation, and no manual route-quality proof"
+    }
+  ]
+}
