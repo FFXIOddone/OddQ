@@ -1,6 +1,6 @@
 addon.name = "oddq"
 addon.author = "Odd"
-addon.version = "0.1.0-rc3"
+addon.version = "0.1.0-rc4"
 addon.desc = "Local quest and mission guidance with an objective pointer."
 
 require("common")

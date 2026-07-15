@@ -10,12 +10,14 @@ current-step view, and an optional objective pointer. The MVP keeps the UI to:
 - one Settings popup.
 
 The retired Guide Hub, developer tuner, map-pin panel, and addon-control helpers
-are not part of the RC3 runtime.
+are not part of the RC4 runtime.
 
 ## Release status
 
-`v0.1.0-rc3` is a public MVP review candidate. It is a prerelease so the addon
-can receive real-world guide and UX feedback without claiming stable coverage.
+`v0.1.0-rc4` is a public MVP review candidate. The Pointer uses OddQ's literal
+2.5D arrow geometry for exact directions and concise zone/map transitions. It
+is a prerelease so the addon can receive real-world guide and UX feedback
+without claiming stable coverage.
 
 ## Install
 
@@ -56,19 +58,19 @@ view; **Back to Guides** returns to search without opening another guide window.
 
 ## Pointer behavior
 
-- In the objective zone, available exact coordinates produce a directional pointer.
-- Outside the objective zone, the pointer shows the destination zone and the
-  guide's available travel guidance.
-- A step with only a zone or map-grid reference stays a checkpoint.
-- A non-spatial instruction stays a manual cue instead of receiving invented
-  coordinates.
+- In the objective zone, available exact coordinates produce a rotating arrow.
+- Outside the objective zone, a fixed transition arrow names the destination;
+  detailed travel steps stay in the Guide.
+- A zone or map-grid checkpoint uses the same clearly labeled transition arrow,
+  not a fabricated world direction.
+- A non-spatial instruction does not display or invent a direction.
 
 OddQ does not move the character, target, trade, cast, attack, follow, or mark a
 step complete. The player advances the guide with **Next** or `/odd next`.
 
 ## Local-only safety and privacy
 
-The RC3 addon makes no network requests and has no bridge, backend, updater,
+The RC4 addon makes no network requests and has no bridge, backend, updater,
 telemetry, packet handler, or credential path. It does not read or upload chat.
 
 For the pointer, it reads the current zone, player position and heading, and
@@ -80,7 +82,7 @@ runtime boundary and guide-data attribution.
 
 ## Verification boundary
 
-RC3 has offline source, syntax, test, layout-probe, and package checks. Those
+RC4 has offline source, syntax, test, layout-probe, and package checks. Those
 checks do not prove live on-screen behavior. No automated interaction with a
 CatsEyeXI game window is part of the release evidence; in-game UX is checked
 manually.

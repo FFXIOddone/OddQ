@@ -1,6 +1,6 @@
 # CatsEyeXI Runtime Profile
 
-OddQ RC3 uses one CatsEyeXI profile: a local Ashita addon with bundled guide
+OddQ RC4 uses one CatsEyeXI profile: a local Ashita addon with bundled guide
 data. There are no hosted endpoints, replacement keys, allowlists, bridge
 settings, backend services, or server changes to configure.
 
@@ -48,5 +48,5 @@ fetch those URLs at runtime.
 
 Source scans, Lua syntax checks, unit tests, layout probes, and archive checks
 are offline evidence. They do not prove live-client UI behavior. CatsEyeXI
-window interaction is not automated for RC3; in-game review is manual and must
+window interaction is not automated for RC4; in-game review is manual and must
 be performed only by an authorized tester.

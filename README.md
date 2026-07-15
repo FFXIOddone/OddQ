@@ -8,9 +8,10 @@ one shared browser/guide window, one pointer window, and a small Settings popup.
 
 ## Release status
 
-`v0.1.0-rc3` is a public prerelease for review. The retired Guide Hub,
-developer tuner, map-pin panel, route bridge, pilot tools, and packet-driven
-progression are not part of the runtime or release package.
+`v0.1.0-rc4` is a public prerelease for review. The Pointer uses OddQ's literal
+2.5D arrow geometry for exact directions and concise zone/map transitions. The
+retired Guide Hub, developer tuner, map-pin panel, route bridge, pilot tools,
+and packet-driven progression are not part of the runtime or release package.
 
 The bundled catalog contains 445 guides:
 
@@ -26,7 +27,7 @@ location when its data does not establish one.
 
 ## Install
 
-Download the RC3 release archive and copy:
+Download the RC4 release archive and copy:
 
 ```text
 Ashita/addons/oddq -> <Ashita>/addons/oddq
@@ -55,10 +56,10 @@ No executable, DLL, service, server change, or account credential is required.
 /odd close                 Close OddQ
 ```
 
-When the selected objective is in the current zone and exact coordinates are
-available, the pointer points toward them. When the objective is in another
-zone, the pointer names the destination zone and travel checkpoint. A guide
-with only a map grid or non-spatial instruction stays a checkpoint/manual cue.
+When exact coordinates are available in the current zone, the arrow rotates
+toward them. Zone and map checkpoints use a fixed transition arrow with a
+destination label; detailed travel steps stay in the Guide. A genuinely
+non-spatial instruction does not invent or display a direction.
 
 ## Safety and privacy
 
@@ -86,5 +87,5 @@ and executables are excluded.
 - OddQ provides guidance, not pathfinding or movement automation.
 - Thirty-five first steps are intentionally manual because a usable spatial
   target is not available.
-- RC3 has offline syntax, contract, layout, and packaging proof. It remains a
+- RC4 has offline syntax, contract, layout, and packaging proof. It remains a
   prerelease until normal manual in-game review is complete.

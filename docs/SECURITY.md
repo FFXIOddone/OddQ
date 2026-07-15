@@ -1,6 +1,6 @@
 # OddQ Security
 
-OddQ RC3 is a local, guidance-only Ashita addon. It is not gameplay automation
+OddQ RC4 is a local, guidance-only Ashita addon. It is not gameplay automation
 and does not require a companion process or server component.
 
 ## Runtime boundary
@@ -48,5 +48,5 @@ Do not post credentials, private logs, or unredacted process output in a public
 issue. Include the OddQ version, operating system, Ashita version, reproduction
 steps, and a redacted description of the impact.
 
-RC3 is a prerelease. Security claims cover the shipped addon files, not
+RC4 is a prerelease. Security claims cover the shipped addon files, not
 third-party launchers, the game client, Ashita itself, or external plugins.

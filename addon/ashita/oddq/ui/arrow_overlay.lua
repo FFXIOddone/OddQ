@@ -70,13 +70,6 @@ local function cue_number(key, fallback)
     return tonumber(cue_layout()[key]) or fallback
 end
 
-local function cue_gap(imgui)
-    local gap = cue_number("body_gap", 0.0)
-    if imgui ~= nil and imgui.Dummy ~= nil and gap > 0.0 then
-        imgui.Dummy({ 1.0, gap })
-    end
-end
-
 local function cue_same_line(imgui, gap)
     if imgui == nil or imgui.SameLine == nil then
         return
@@ -185,7 +178,7 @@ local function draw_vertical_indicator(imgui, draw, center, cue)
     end
 end
 
-local function draw_direction_arrow(imgui, cue)
+local function draw_direction_arrow(imgui, cue, fallback_vector)
     if imgui.GetWindowDrawList == nil or imgui.GetCursorScreenPos == nil then
         imgui_text.colored(imgui, { 1.0, 0.88, 0.45, 1.0 }, tostring((cue or {}).status_label or "Route cue"))
         return
@@ -201,7 +194,7 @@ local function draw_direction_arrow(imgui, cue)
     local arrow_gap = cue_number("arrow_gap", 18.0)
     local x, y = imgui.GetCursorScreenPos()
     local center = { x + (size * 0.5), y + (size * 0.5) }
-    local vector = direction_vector(cue)
+    local vector = direction_vector(cue) or fallback_vector
     if vector == nil then
         draw_center_marker(imgui, draw, center)
         draw_vertical_indicator(imgui, draw, center, cue)
@@ -243,6 +236,82 @@ local function draw_direction_arrow(imgui, cue)
 
     if imgui.Dummy ~= nil then
         imgui.Dummy({ size + arrow_gap, size + 2.0 })
+    end
+end
+
+local function nonblank(value)
+    value = tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    return value ~= "" and value or nil
+end
+
+local function positive_number(value)
+    value = tonumber(value)
+    return value ~= nil and value > 0 and value or nil
+end
+
+local function is_spatial_cue(cue)
+    if type(cue) ~= "table" or cue.available ~= true then
+        return false
+    end
+    if cue.zone_mismatch == true or cue.map_mismatch == true then
+        return true
+    end
+    if cue.checkpoint_only == true then
+        return positive_number(cue.target_zone_id) ~= nil
+            or nonblank(cue.target_map_label) ~= nil
+            or nonblank(cue.map_grid) ~= nil
+    end
+    return direction_vector(cue) ~= nil
+        or (type(cue.target) == "table" and type(cue.current) == "table")
+end
+
+local function pointer_copy(cue)
+    local zone = nonblank(cue.target_zone_label)
+    local map = nonblank(cue.target_map_label)
+    local grid = nonblank(cue.map_grid)
+    local label = nonblank(cue.label) or "Next objective"
+
+    if cue.zone_mismatch == true then
+        return "Travel to", zone or label, "Open the Guide for travel steps"
+    end
+    if cue.map_mismatch == true then
+        return "Change map", map or label, zone
+    end
+    if cue.checkpoint_only == true then
+        local location = map or grid
+        if map ~= nil and grid ~= nil and map ~= grid then
+            location = map .. " - " .. grid
+        end
+        if zone ~= nil and location ~= nil and zone ~= location then
+            location = zone .. " - " .. location
+        end
+        return "Map checkpoint", label, location or zone
+    end
+
+    local status = nonblank(cue.distance_label)
+    local vertical = nonblank(cue.vertical_label)
+    if vertical ~= nil and vertical ~= "Level" then
+        status = status ~= nil and (status .. " | " .. vertical) or vertical
+    end
+    if cue.arrived == true then
+        status = "Near target"
+    end
+    return "Go Here", label, status
+end
+
+local function render_pointer_copy(imgui, cue)
+    local title, detail, status = pointer_copy(cue)
+    local grouped = imgui.BeginGroup ~= nil and imgui.EndGroup ~= nil
+    if grouped then
+        imgui.BeginGroup()
+    end
+    imgui_text.colored(imgui, skin.colors.blue_highlight, title)
+    imgui_text.wrapped(imgui, detail)
+    if status ~= nil then
+        imgui_text.colored(imgui, skin.colors.blue, status)
+    end
+    if grouped then
+        imgui.EndGroup()
     end
 end
 
@@ -351,13 +420,27 @@ function arrow_overlay.render(imgui, state, route, active_segment_index, live_co
         return
     end
 
-    local flags = bor_flags(ImGuiWindowFlags_NoScrollbar, ImGuiWindowFlags_NoSavedSettings)
+    local cue = guidance_cursor.build(route, active_segment_index, live_context)
+    if not is_spatial_cue(cue) then
+        return
+    end
+
+    local flags = bor_flags(
+        ImGuiWindowFlags_NoScrollbar,
+        ImGuiWindowFlags_NoSavedSettings
+    )
     if imgui.SetNextWindowPos ~= nil then
         imgui.SetNextWindowPos({ state.arrow.x, state.arrow.y }, ImGuiCond_FirstUseEver)
     end
     local layout = cue_layout()
     if imgui.SetNextWindowSize ~= nil then
-        imgui.SetNextWindowSize({ layout.width or 320.0, layout.height or 178.0 }, ImGuiCond_FirstUseEver)
+        imgui.SetNextWindowSize({ layout.width or 360.0, layout.height or 126.0 }, ImGuiCond_FirstUseEver)
+    end
+    if imgui.SetNextWindowSizeConstraints ~= nil then
+        imgui.SetNextWindowSizeConstraints(
+            { layout.width or 360.0, layout.height or 126.0 },
+            { 10000.0, 10000.0 }
+        )
     end
     if imgui.SetNextWindowBgAlpha ~= nil then
         imgui.SetNextWindowBgAlpha(layout.alpha or 0.35)
@@ -366,51 +449,13 @@ function arrow_overlay.render(imgui, state, route, active_segment_index, live_co
     local visible, open = window_state.begin(imgui, "OddQ Pointer", true, flags)
     state.arrow.visible = open
     if visible then
-        local cue = guidance_cursor.build(route, active_segment_index, live_context)
-        if cue.available == true then
-            if cue.zone_mismatch == true then
-                imgui_text.colored(imgui, skin.colors.blue_highlight, wrong_zone_title(cue))
-                cue_gap(imgui)
-                imgui_text.wrapped(imgui, wrong_zone_travel_line(cue))
-            elseif cue.map_mismatch == true then
-                imgui_text.colored(imgui, { 1.0, 0.35, 0.25, 1.0 }, "Wrong map")
-                cue_gap(imgui)
-                imgui_text.wrapped(imgui, tostring(cue.message or "Move to the target map."))
-            elseif cue.checkpoint_only == true then
-                imgui_text.colored(imgui, skin.colors.blue_highlight, "Checkpoint")
-                cue_gap(imgui)
-                imgui_text.wrapped(imgui, tostring(cue.label or "Route target"))
-            else
-                imgui_text.colored(imgui, skin.colors.blue_highlight, "Go Here")
-                cue_gap(imgui)
-                draw_direction_arrow(imgui, cue)
-                cue_same_line(imgui, cue_number("label_gap", nil))
-                imgui_text.wrapped(imgui, tostring(cue.label or "Route target"))
-            end
-            if cue.zone_mismatch ~= true then
-                if cue.map_grid ~= nil and cue.map_grid ~= "" then
-                    cue_gap(imgui)
-                    imgui_text.text(imgui, "Map grid: " .. tostring(cue.map_grid))
-                end
-                if cue.distance_label ~= nil and cue.distance_label ~= "" then
-                    cue_gap(imgui)
-                    imgui_text.text(imgui, "Distance: " .. cue.distance_label)
-                end
-                if cue.vertical_label ~= nil and cue.vertical_label ~= "" and cue.vertical_label ~= "Level" then
-                    cue_gap(imgui)
-                    imgui_text.text(imgui, "Vertical: " .. cue.vertical_label)
-                end
-                if cue.route_complete == true then
-                    imgui_text.colored(imgui, skin.colors.blue_highlight, "Zone reached; verify manually")
-                elseif cue.off_route == true then
-                    imgui_text.colored(imgui, skin.colors.blue, tostring(cue.status_label or "Off route"))
-                elseif cue.arrived == true then
-                    imgui_text.colored(imgui, skin.colors.blue_highlight, "Near target; use /odd next")
-                end
-            end
-        else
-            imgui_text.colored(imgui, skin.colors.blue, "No visual route target")
-        end
+        local transition = cue.zone_mismatch == true
+            or cue.map_mismatch == true
+            or cue.checkpoint_only == true
+        local fallback_vector = transition and { x = 1.0, y = 0.0 } or nil
+        draw_direction_arrow(imgui, cue, fallback_vector)
+        cue_same_line(imgui, cue_number("label_gap", 14.0))
+        render_pointer_copy(imgui, cue)
         if imgui.GetWindowPos ~= nil then
             local x, y = imgui.GetWindowPos()
             state.arrow.x = x

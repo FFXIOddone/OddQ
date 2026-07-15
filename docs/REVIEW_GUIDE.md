@@ -1,4 +1,4 @@
-# OddQ RC3 Review Guide
+# OddQ RC4 Review Guide
 
 This is the shortest review path for the local-only OddQ MVP.
 
@@ -26,7 +26,8 @@ Review these properties directly in the shipped Lua tree:
 2. No network client or endpoint is loaded by the addon.
 3. The D3D-present handler reads local player context, renders UI, and saves
    preferences; it does not automate gameplay.
-4. Missing coordinates remain zone/map checkpoints or manual cues.
+4. Missing coordinates remain labeled transition checkpoints or manual cues;
+   they never receive a fabricated world direction.
 5. Closing OddQ closes the guide, pointer, and Settings surfaces.
 
 Useful source scans:
@@ -49,10 +50,11 @@ Run this checklist manually in an approved environment:
 2. Confirm the browser and loaded guide reuse the same `OddQ` window.
 3. Search for a guide, load it, and use Previous/Next.
 4. Confirm Settings only controls the objective pointer.
-5. In the objective zone, confirm a coordinate-backed step points toward its
-   target.
-6. In another zone, confirm the pointer shows destination-zone travel guidance.
-7. Confirm a manual step does not invent a direction.
+5. In the objective zone, confirm a coordinate-backed step renders the literal
+   rotating arrow toward its target.
+6. In another zone, confirm a fixed transition arrow names the destination and
+   detailed travel guidance remains in the Guide.
+7. Confirm a non-spatial manual step does not open a fake pointer.
 8. Close the window and confirm no OddQ UI remains open.
 
 ## Release artifact
@@ -69,7 +71,7 @@ alongside the addon.
 ## Evidence boundary
 
 Offline tests and layout probes establish source and package contracts. They do
-not establish live-client UX. RC3 makes no automated CatsEyeXI-window test claim;
+not establish live-client UX. RC4 makes no automated CatsEyeXI-window test claim;
 the player-facing checklist above remains a manual review step.
 
 ## Known limitations

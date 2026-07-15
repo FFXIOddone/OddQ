@@ -104,13 +104,12 @@ skin.layout = {
         height = 170.0,
     },
     direction_cue = {
-        width = 300.0,
-        height = 150.0,
+        width = 360.0,
+        height = 126.0,
         alpha = 0.82,
         arrow_size = 58.0,
-        arrow_gap = 18.0,
-        label_gap = 0.0,
-        body_gap = 0.0,
+        arrow_gap = 14.0,
+        label_gap = 14.0,
     },
     window = {
         alpha = 0.93,
