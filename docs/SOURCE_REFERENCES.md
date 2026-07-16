@@ -28,7 +28,7 @@ code.
 ## Regeneration rule
 
 Data regeneration must preserve source attribution and must not replace an
-unknown coordinate or map number with a guess. A known grid without a reliable
-map number remains explicitly labeled `map not recorded`. CatsEyeXI-specific
-facts stay distinguishable from retail reference material, and manual curation
-stays identifiable as such.
+unknown coordinate or map number in structured source data. The UI temporarily
+displays `Map #1` when a grid has no recorded page, but the underlying map field
+remains unset. CatsEyeXI-specific facts stay distinguishable from retail
+reference material, and manual curation stays identifiable as such.

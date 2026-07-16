@@ -1,6 +1,6 @@
 # OddQ Security
 
-OddQ RC5 is a local, guidance-only Ashita addon. It is not gameplay automation
+OddQ v1.0.0 is a local, guidance-only Ashita addon. It is not gameplay automation
 and does not require a companion process or server component.
 
 ## Runtime boundary
@@ -24,10 +24,10 @@ The shipped addon does not:
 
 ## Fail-closed guidance
 
-OddQ does not fabricate position data or map data. A source-backed map number
-appears beside the objective grid. When a grid is known but its map number is
-not established, the UI explicitly says `map not recorded`. Guide progression
-remains manual.
+OddQ does not fabricate position data or write fallback map values into source
+data. A source-backed map number appears beside the objective grid. When a grid
+is known but its map number is not established, the UI temporarily displays
+`Map #1`. Guide progression remains manual.
 
 ## Local files
 
@@ -48,5 +48,5 @@ Do not post credentials, private logs, or unredacted process output in a public
 issue. Include the OddQ version, operating system, Ashita version, reproduction
 steps, and a redacted description of the impact.
 
-RC5 is a prerelease. Security claims cover the shipped addon files, not
+Security claims cover the shipped addon files, not
 third-party launchers, the game client, Ashita itself, or external plugins.

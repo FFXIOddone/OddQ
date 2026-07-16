@@ -1,6 +1,6 @@
 # CatsEyeXI Runtime Profile
 
-OddQ RC5 uses one CatsEyeXI profile: a local Ashita addon with bundled guide
+OddQ v1.0.0 uses one CatsEyeXI profile: a local Ashita addon with bundled guide
 data. There are no hosted endpoints, replacement keys, allowlists, bridge
 settings, backend services, or server changes to configure.
 
@@ -32,7 +32,7 @@ Its only persistent file is the first-launch marker at
 - Confirm no packet, outgoing-command, or player-state API is referenced.
 - Confirm Browser and Guide are the complete UI surface in one shared window.
 - Confirm a sourced map number appears beside its grid and an unknown map
-  number is explicitly labeled `map not recorded`.
+  number temporarily displays as `Map #1`.
 - Confirm the addon does not automatically advance a guide or claim arrival.
 - Confirm its only local write is the first-launch marker.
 
@@ -50,5 +50,5 @@ fetch those URLs at runtime.
 
 Source scans, Lua syntax checks, unit tests, layout probes, and archive checks
 are offline evidence. They do not prove live-client UI behavior. CatsEyeXI
-window interaction is not automated for RC5; in-game review is manual and must
+window interaction is not automated for v1.0.0; in-game review is manual and must
 be performed only by an authorized tester.

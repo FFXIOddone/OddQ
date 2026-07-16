@@ -4,12 +4,12 @@ Clean, helpful quest and mission guidance for CatsEyeXI.
 
 OddQ is a local Ashita v4 addon with a searchable Guide Browser and a focused
 Guide view. Both views use one shared browser/guide window that players can move
-and resize from 480x320 up to the content-bounded 820x560 maximum. The RC5 MVP has
+and resize from 480x320 up to the content-bounded 820x560 maximum. The 1.0 MVP has
 no objective pointer, Settings popup, or player-state tracking.
 
 ## Release status
 
-`v0.1.0-rc5` is a public prerelease for review. The retired Guide Hub,
+`v1.0.0` is the first stable public release. The retired Guide Hub,
 objective pointer, Settings popup, developer tuner, map-pin panel, route bridge,
 pilot tools, and packet-driven progression are not part of the runtime or
 release package.
@@ -22,12 +22,13 @@ The bundled catalog contains 445 guides:
 - 29 EXP guides
 
 When source data establishes an objective's map number, OddQ displays it beside
-the map-grid position. A grid with no reliable map number is labeled
-`map not recorded`; OddQ does not invent `Map 1` or expose raw XYZ coordinates.
+the map-grid position. A grid with no recorded map number temporarily displays
+as `Map #1`; this fallback is not written into source data. OddQ does not expose
+raw XYZ coordinates.
 
 ## Install
 
-Download the RC5 release archive and copy:
+Download the v1.0.0 release archive and copy:
 
 ```text
 Ashita/addons/oddq -> <Ashita>/addons/oddq
@@ -57,7 +58,7 @@ No executable, DLL, service, server change, or account credential is required.
 
 Loading a guide switches the shared window from Browser to Guide. **Back to
 Guides** returns to search. Location rows show `Map N - (grid)` when both values
-are sourced, or `(grid) - map not recorded` when only the grid is known.
+are sourced, or `Map #1 - (grid)` as the temporary missing-map fallback.
 
 ## Safety and privacy
 
@@ -82,7 +83,6 @@ evidence, backups, captures, and executables are excluded.
 ## Current limitations
 
 - OddQ provides written guidance, not pathfinding or movement automation.
-- A map number appears only when the source data establishes one; unknown map
-  numbers remain visibly marked as not recorded.
-- RC5 has offline syntax, contract, layout, and packaging proof. It remains a
-  prerelease until normal manual in-game review is complete.
+- Unknown map pages use a visible `Map #1` presentation fallback until sourced
+  page metadata is added.
+- v1.0.0 has syntax, contract, layout, packaging, and owner UI-review evidence.

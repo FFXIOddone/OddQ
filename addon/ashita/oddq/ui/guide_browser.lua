@@ -211,7 +211,8 @@ local function first_location(entry)
         return map
     end
     if grid ~= "" then
-        return grid .. " - map not recorded"
+        -- AGENT_MIN: reason=product wants an immediate display fallback; ceiling=presentation only; upgrade=replace when sourced map metadata is added.
+        return "Map #1 - " .. grid
     end
     return ""
 end

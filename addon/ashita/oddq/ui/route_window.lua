@@ -341,7 +341,8 @@ local function location_label(source, mark_missing_map)
         return map
     end
     if grid ~= "" and mark_missing_map == true then
-        return grid .. " - map not recorded"
+        -- AGENT_MIN: reason=product wants an immediate display fallback; ceiling=presentation only; upgrade=replace when sourced map metadata is added.
+        return "Map #1 - " .. grid
     end
     return grid
 end
@@ -811,8 +812,10 @@ local function render_step_navigation(imgui, guidance, objective, selected, max_
     detail_gap(imgui, detail_number("nav_top_gap", 4.0))
     local mission = safe_text(objective.objective_kind) == "mission"
     local previous_enabled = selected > 1 or mission
-    local previous_label = selected == 1 and mission and "Previous Mission" or "Previous"
-    if skin.button(imgui, previous_label .. "##oddq_guide_prev", previous_enabled and "secondary" or "disabled", detail_button_size("nav_button_height", "nav_button_width")) then
+    local previous_mission = selected == 1 and mission
+    local previous_label = previous_mission and "Previous Mission" or "Previous"
+    local previous_width_key = previous_mission and "nav_mission_button_width" or "nav_button_width"
+    if skin.button(imgui, previous_label .. "##oddq_guide_prev", previous_enabled and "secondary" or "disabled", detail_button_size("nav_button_height", previous_width_key)) then
         if selected > 1 then
             guidance.guide_step_tab_index = selected - 1
         elseif type(on_command) == "function" then
@@ -1035,6 +1038,9 @@ local function compact_location_label(source)
     end
     if map ~= "" then
         return map
+    end
+    if grid ~= "" then
+        return "Map #1 " .. grid
     end
     return grid
 end

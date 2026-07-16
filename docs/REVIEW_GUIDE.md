@@ -1,4 +1,4 @@
-# OddQ RC5 Review Guide
+# OddQ v1.0.0 Review Guide
 
 This is the shortest review path for the local-only OddQ MVP.
 
@@ -40,7 +40,7 @@ Review these properties directly in the shipped Lua tree:
 3. The D3D-present handler renders bundled local guide data; it does not inspect
    player state or automate gameplay.
 4. A source-backed map number appears beside its grid. If only the grid is
-   established, the UI explicitly says `map not recorded` rather than guessing.
+   established, the UI temporarily displays `Map #1`; source data remains unset.
 5. The only local write is the first-launch marker.
 6. Closing `OddQ` leaves no second OddQ window or popup behind.
 
@@ -65,11 +65,12 @@ Run this checklist manually in an approved environment:
 3. Move and resize the window; confirm it remains usable from 480x320 through
    its content-bounded 820x560 maximum.
 4. Search for a guide, load it, and use Previous/Next.
-5. Confirm a step with sourced map data shows `Map N` beside its grid.
-6. Confirm a grid without a sourced map number says `map not recorded` and
-   does not silently become `Map 1`.
-7. Confirm no Pointer, Settings, or other OddQ window appears.
-8. Close the window and confirm no OddQ UI remains open.
+5. Confirm **Previous Mission** is fully visible while ordinary **Previous**
+   keeps its compact width.
+6. Confirm a step with sourced map data shows `Map N` beside its grid.
+7. Confirm a grid without a sourced map number displays `Map #1`.
+8. Confirm no Pointer, Settings, or other OddQ window appears.
+9. Close the window and confirm no OddQ UI remains open.
 
 ## Release artifact
 
@@ -85,12 +86,12 @@ alongside the addon.
 ## Evidence boundary
 
 Offline tests and layout probes establish source and package contracts. They do
-not establish live-client UX. RC5 makes no automated CatsEyeXI-window test
+not establish live-client UX. v1.0.0 makes no automated CatsEyeXI-window test
 claim; the player-facing checklist above remains a manual review step.
 
 ## Known limitations
 
 - OddQ provides written guidance, not pathfinding or movement automation.
-- Some steps have no source-backed map number and are labeled accordingly.
+- Some steps have no source-backed map number and temporarily display `Map #1`.
 - Guide correctness and server-specific route quality should be reported and
-  improved incrementally during the prerelease.
+  improved incrementally after release.

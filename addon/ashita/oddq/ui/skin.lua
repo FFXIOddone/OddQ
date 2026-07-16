@@ -71,6 +71,7 @@ skin.layout = {
         tab_button_min_width = 78.0,
         nav_button_gap = 7.0,
         nav_button_width = 132.0,
+        nav_mission_button_width = 152.0,
         nav_button_height = 0.0,
         nav_top_gap = 4.0,
         nav_bottom_gap = 4.0,
