@@ -1,6 +1,10 @@
 local objective_catalog = require("objective_catalog")
 local imgui_text = require("ui/imgui_text")
 local skin = require("ui/skin")
+local zone_names_loaded, zone_names = pcall(require, "data/zone_names")
+if not zone_names_loaded then
+    zone_names = {}
+end
 
 local guide_browser = {}
 
@@ -217,6 +221,39 @@ local function first_location(entry)
     return ""
 end
 
+local function rounded_tenth(value)
+    local number = tonumber(value)
+    if number == nil then
+        return nil
+    end
+    return string.format("%.1f", math.floor((number * 10) + 0.5) / 10)
+end
+
+local function first_zone_name(entry)
+    local step = first_step(entry)
+    local zone_id = tonumber(step.zone_id or (entry or {}).first_zone_id)
+    if zone_id == nil then
+        return ""
+    end
+    return trim(zone_names[zone_id])
+end
+
+local function exp_marker(entry)
+    local step = first_step(entry)
+    local position = type(step.position) == "table" and step.position or {}
+    local x = rounded_tenth(position.x)
+    local y = rounded_tenth(position.y)
+    if x == nil or y == nil then
+        return ""
+    end
+    local map = first_map_label(entry)
+    if map == "" then
+        -- AGENT_MIN: reason=EXP source data has no map-page field; ceiling=presentation fallback only; upgrade=replace when sourced map metadata is added.
+        map = "Map #1"
+    end
+    return map .. " - X " .. x .. ", Y " .. y
+end
+
 local function guide_kind(entry)
     local mode = objective_catalog.mode_for_entry(entry)
     if mode == "missions" then
@@ -274,6 +311,17 @@ local function guide_meta(entry)
     local level = level_label(entry)
     if level ~= "" then
         table.insert(parts, level)
+    end
+    if trim((entry or {}).kind) == "exp_camp" then
+        local category = trim((entry or {}).category)
+        local zone = first_zone_name(entry)
+        if category ~= "" then
+            table.insert(parts, category)
+        end
+        if zone ~= "" then
+            table.insert(parts, zone)
+        end
+        return table.concat(parts, " - ")
     end
     local target = first_target(entry)
     local location = first_location(entry)
@@ -374,6 +422,33 @@ local function append_preview(lines, selected, prefix, include_command)
         return
     end
     local entry = selected.entry or {}
+    if trim(entry.kind) == "exp_camp" then
+        local level = level_label(entry)
+        local category = trim(entry.category)
+        local zone = first_zone_name(entry)
+        local marker = exp_marker(entry)
+        local targets = trim(entry.exp_targets)
+        table.insert(lines, prefix .. "Guide: " .. selected.label)
+        if level ~= "" then
+            table.insert(lines, prefix .. "Level: " .. level)
+        end
+        if category ~= "" then
+            table.insert(lines, prefix .. "Style: " .. category)
+        end
+        if zone ~= "" then
+            table.insert(lines, prefix .. "Zone: " .. zone)
+        end
+        if marker ~= "" then
+            table.insert(lines, prefix .. "Guide marker: " .. marker)
+        end
+        if targets ~= "" then
+            table.insert(lines, prefix .. "Targets: " .. targets)
+        end
+        if include_command == true then
+            table.insert(lines, prefix .. "Open: " .. command_text(selected.args))
+        end
+        return
+    end
     local target = first_target(entry)
     local location = first_location(entry)
     table.insert(lines, prefix .. "Guide: " .. selected.label)

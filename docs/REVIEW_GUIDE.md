@@ -1,4 +1,4 @@
-# OddQ v1.0.0 Review Guide
+# OddQ v1.0.1 Review Guide
 
 This is the shortest review path for the local-only OddQ MVP.
 
@@ -69,8 +69,11 @@ Run this checklist manually in an approved environment:
    keeps its compact width.
 6. Confirm a step with sourced map data shows `Map N` beside its grid.
 7. Confirm a grid without a sourced map number displays `Map #1`.
-8. Confirm no Pointer, Settings, or other OddQ window appears.
-9. Close the window and confirm no OddQ UI remains open.
+8. Load an EXP guide and confirm **Travel**, **Targets**, and **Safety** each appear exactly once.
+   Confirm its browser row shows level, style, and zone
+   without `1 steps` or `Starts at: EXP Parties` filler.
+9. Confirm no Pointer, Settings, or other OddQ window appears.
+10. Close the window and confirm no OddQ UI remains open.
 
 ## Release artifact
 
@@ -86,7 +89,7 @@ alongside the addon.
 ## Evidence boundary
 
 Offline tests and layout probes establish source and package contracts. They do
-not establish live-client UX. v1.0.0 makes no automated CatsEyeXI-window test
+not establish live-client UX. v1.0.1 makes no automated CatsEyeXI-window test
 claim; the player-facing checklist above remains a manual review step.
 
 ## Known limitations

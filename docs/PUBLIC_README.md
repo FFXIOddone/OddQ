@@ -8,13 +8,13 @@ OddQ is a local Ashita v4 addon with two focused views in one shared window:
 - **Guide** shows the selected guide and its current step.
 
 The `OddQ` window is movable and resizable from 480x320 up to the
-content-bounded 820x560 maximum. v1.0.0 does not ship an objective pointer,
+content-bounded 820x560 maximum. v1.0.1 does not ship an objective pointer,
 Settings popup, Guide Hub, player tracking, developer tuner, map-pin panel, or
 addon-control helper.
 
 ## Release status
 
-`v1.0.0` is the first stable public MVP release.
+`v1.0.1` is the current stable public MVP patch release. It fixes repeated EXP-camp guidance and improves camp metadata and target copy.
 
 ## Install
 
@@ -57,13 +57,16 @@ Guides** returns to search without opening another window.
 - A source-backed map number and grid render as `Map N - (grid)`.
 - A known grid without a recorded map number temporarily renders as
   `Map #1 - (grid)`; the fallback is not written into source data.
-- OddQ does not show raw XYZ coordinates.
+- Ordinary mission, quest, and job steps do not show raw XYZ coordinates.
+- EXP guides intentionally show rounded X/Y guide markers with `Map #1` when
+  the map page is unrecorded; these markers are arrival or reset references,
+  not verified pull locations.
 - The player advances the guide with **Next** or `/odd next`; OddQ does not
   infer progression from player activity.
 
 ## Local-only safety and privacy
 
-The v1.0.0 addon makes no network requests and has no bridge, backend, updater,
+The v1.0.1 addon makes no network requests and has no bridge, backend, updater,
 telemetry, packet handler, credential path, or player-state tracker. It does not
 read or upload chat and does not move, target, trade, cast, attack, or follow.
 
@@ -75,7 +78,7 @@ runtime boundary and guide-data attribution.
 
 ## Verification boundary
 
-v1.0.0 has source, syntax, test, layout-probe, and package checks. The
+v1.0.1 has source, syntax, test, layout-probe, and package checks. The
 release package contains exactly 13 runtime Lua/data files. Those checks do not
 prove live on-screen behavior. No automated interaction with a CatsEyeXI game
 window is part of the release evidence; the owner checks in-game UX manually.

@@ -187,31 +187,28 @@ local function exp_display_priority(camp)
     return base - level_min
 end
 
-local function exp_instruction(camp)
-    local name = safe_text(camp.name)
-    if name == "" then
-        name = "EXP camp"
-    end
-    local parts = {
-        "Travel to " .. name .. ".",
-    }
-    local range = safe_text(camp.level_range)
-    if range ~= "" then
-        table.insert(parts, "Recommended range: Lv." .. range .. ".")
-    end
-    local note = safe_text(camp.note)
-    if note ~= "" then
-        table.insert(parts, note)
-    end
-    return table.concat(parts, " ")
-end
-
-local function exp_notes(camp)
-    local note = safe_text(camp.note)
+local function exp_details(camp)
+    local note = safe_text((camp or {}).note)
     if note == "" then
-        return {}
+        return { travel = "", targets = "", safety = "", notes = {} }
     end
-    return { note }
+
+    local travel, targets, safety = note:match(
+        "^%s*Travel:%s*(.-)%s+Targets:%s*(.-)%s+Safety:%s*(.-)%s*$"
+    )
+    if travel == nil or targets == nil or safety == nil then
+        return { travel = "", targets = "", safety = "", notes = { note } }
+    end
+    return {
+        travel = travel,
+        targets = targets,
+        safety = safety,
+        notes = {
+            "Travel: " .. travel,
+            "Targets: " .. targets,
+            "Safety: " .. safety,
+        },
+    }
 end
 
 local function to_exp_entry(camp)
@@ -230,6 +227,7 @@ local function to_exp_entry(camp)
     if name == "" then
         name = objective_id
     end
+    local details = exp_details(camp)
 
     return {
         id = "objective:" .. objective_id,
@@ -243,6 +241,9 @@ local function to_exp_entry(camp)
         level_min = tonumber(camp.level_min) or 0,
         level_max = tonumber(camp.level_max) or 0,
         level_range = safe_text(camp.level_range),
+        exp_travel = details.travel,
+        exp_targets = details.targets,
+        exp_safety = details.safety,
         prerequisites = {
             fame = {},
             level_min = tonumber(camp.level_min) or 0,
@@ -255,7 +256,7 @@ local function to_exp_entry(camp)
         first_step_id = "camp",
         first_step_kind = "exp_camp",
         first_zone_id = zone_id,
-        first_target_name = safe_text(camp.category),
+        first_target_name = "",
         first_map_grid = "",
         verification_status = "draft",
         steps = {
@@ -263,13 +264,13 @@ local function to_exp_entry(camp)
                 step_id = "camp",
                 step_kind = "exp_camp",
                 zone_id = zone_id,
-                npc_name = safe_text(camp.category),
+                npc_name = "",
                 map_grid = "",
                 position = position,
-                instruction = exp_instruction(camp),
+                instruction = "",
                 required_items = {},
                 required_key_items = {},
-                notes = exp_notes(camp),
+                notes = copy_list(details.notes),
             },
         },
     }
@@ -1448,6 +1449,7 @@ local function contract_steps(steps)
             instruction = safe_text(step.instruction),
             required_items = copy_list(step.required_items),
             required_key_items = copy_list(step.required_key_items),
+            notes = copy_list(step.notes),
         })
     end
     return rows

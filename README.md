@@ -9,7 +9,8 @@ no objective pointer, Settings popup, or player-state tracking.
 
 ## Release status
 
-`v1.0.0` is the first stable public release. The retired Guide Hub,
+`v1.0.1` is the current stable patch release. It fixes repeated EXP-camp
+guidance while improving camp metadata and target copy. The retired Guide Hub,
 objective pointer, Settings popup, developer tuner, map-pin panel, route bridge,
 pilot tools, and packet-driven progression are not part of the runtime or
 release package.
@@ -23,12 +24,14 @@ The bundled catalog contains 445 guides:
 
 When source data establishes an objective's map number, OddQ displays it beside
 the map-grid position. A grid with no recorded map number temporarily displays
-as `Map #1`; this fallback is not written into source data. OddQ does not expose
-raw XYZ coordinates.
+as `Map #1`; this fallback is not written into source data. Ordinary mission,
+quest, and job steps do not expose raw XYZ coordinates.
+EXP guides intentionally show rounded X/Y guide markers with the map fallback;
+these are arrival or reset references, not verified pull locations.
 
 ## Install
 
-Download the v1.0.0 release archive and copy:
+Download the v1.0.1 release archive and copy:
 
 ```text
 Ashita/addons/oddq -> <Ashita>/addons/oddq
@@ -85,4 +88,4 @@ evidence, backups, captures, and executables are excluded.
 - OddQ provides written guidance, not pathfinding or movement automation.
 - Unknown map pages use a visible `Map #1` presentation fallback until sourced
   page metadata is added.
-- v1.0.0 has syntax, contract, layout, packaging, and owner UI-review evidence.
+- v1.0.1 has syntax, contract, layout, packaging, and owner UI-review evidence.

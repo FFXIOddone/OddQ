@@ -1,6 +1,6 @@
 # OddQ Security
 
-OddQ v1.0.0 is a local, guidance-only Ashita addon. It is not gameplay automation
+OddQ v1.0.1 is a local, guidance-only Ashita addon. It is not gameplay automation
 and does not require a companion process or server component.
 
 ## Runtime boundary

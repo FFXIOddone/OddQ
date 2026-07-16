@@ -1,6 +1,6 @@
 addon.name = "oddq"
 addon.author = "Odd"
-addon.version = "1.0.0"
+addon.version = "1.0.1"
 addon.desc = "Local quest and mission guide browser."
 
 require("common")

@@ -119,7 +119,7 @@ return {
         x = 60.989,
         y = -151.001,
         z = -5.101,
-        note = "Travel: reach Valkurm Dunes from Konschtat Highlands, La Theine Plateau, or Selbina, then gather near the listed marker. Targets: Damselflies, Hill Lizards, Snippers, and Beach Pugils across Lv.11-20. Safety: watch Goblins and night undead, keep Sneak/Invisible tools for travel, and use Selbina as the reset/HP town.",
+        note = "Travel: reach Valkurm Dunes from Konschtat Highlands, La Theine Plateau, or Selbina. The listed guide marker is an arrival and reset reference, not a verified pull location. Targets: Damselfly, Hill Lizard, Snipper, and Beach Pugil; check each target before pulling and move as the party outgrows the current group. Safety: Goblins and night undead can turn a clean chain into a wipe, so keep a clear route back to Selbina or a zone line.",
     },
     {
         id = "qufim_island_parties_21_30",
@@ -134,7 +134,7 @@ return {
         x = -252.0,
         y = 297.0,
         z = -20.0,
-        note = "Travel: use Jeuno to Lower Delkfutt's Tower, then exit to Qufim Island or use the Qufim Survival Guide if unlocked. Targets: Worms, Clippers, Pugils, and Giants as the party climbs Lv.21-30. Safety: undead appear at night, Giants hit hard, and bad pulls should reset toward Lower Delkfutt's Tower or the Survival Guide side.",
+        note = "Travel: reach Qufim Island through Lower Delkfutt's Tower, or use the Qufim Island Survival Guide if unlocked. The listed guide marker is the Survival Guide, so treat it as an arrival and reset reference rather than a guaranteed pull location. Targets: Land Worm, Clipper, Greater Pugil, Giant Ascetic, Giant Hunter, Giant Ranger, and Giant Trapper; check each target before pulling and move to the group that fits the party's current level. Safety: Wight and Banshee are also present in the zone, and weaker parties should keep a clear reset route toward Lower Delkfutt's Tower or the Survival Guide.",
     },
     {
         id = "yuhtunga_jungle_parties_31_40",
@@ -164,7 +164,7 @@ return {
         x = -383.0,
         y = 363.5,
         z = -6.118,
-        note = "Travel: enter Garlaige Citadel from Sauromugue Champaign or use the Survival Guide if unlocked, then gather near the listed marker before pushing gates. Targets: Beetles and Bats around Lv.31-40. Safety: Banishing Gate routes can separate the party, bombs and undead are dangerous, and Sneak/Invisible helps avoid unwanted aggro.",
+        note = "Travel: enter Garlaige Citadel from Sauromugue Champaign or use the Survival Guide if unlocked. The listed guide marker is the Survival Guide, so use it to regroup before choosing a pull lane; it is not a verified camp coordinate. Targets: Borer Beetle, Chamber Beetle, Citadel Bats, Donjon Bat, and Funnel Bats; check each target before pulling because the guide covers a broad level band. Safety: Banishing Gate routes can split the party, and Explosure, Hellmine, Revenant, and Wraith are also present; keep Sneak and Invisible available and do not push beyond a known return route.",
     },
     {
         id = "crawlers_nest_parties_41_50",
@@ -209,7 +209,7 @@ return {
         x = 337.28,
         y = 71.739,
         z = -6.619,
-        note = "Travel: reach The Boyahda Tree through The Sanctuary of Zi'Tah and move to the listed tree-side marker. Targets: Steelshells, Robber Crabs, Processionaires, and later tree mobs across Lv.61-75. Safety: keep Sneak/Invisible up while moving, avoid water/tree-room links, and confirm the party can handle crab defense before chaining.",
+        note = "Travel: reach The Boyahda Tree through The Sanctuary of Zi'Tah. Use the listed guide marker to regroup before choosing a pull lane; it is not a verified camp coordinate. Targets: Steelshell, Robber Crab, and Processionaire; check each target before pulling because the guide covers a broad level band. Safety: keep Sneak and Invisible up while moving, avoid links around water and tree rooms, and confirm the party can handle crab defense before chaining.",
     },
     {
         id = "buburimu_peninsula_parties_12_20",
@@ -359,7 +359,7 @@ return {
         x = -449.0,
         y = -497.0,
         z = 13.399,
-        note = "Travel: reach Nashmau from Aht Urhgan Whitegate, exit into Caedarva Mire, use Dvucca/Azouph Isle staging if unlocked, or use Caedarva Mire Home Point #1. Targets: Heraldic Imps, Imps, Marsh Murres, Jnun, and other mire mobs across Lv.60-75 depending on party strength. Safety: Imps cause Amnesia, Chigoe can appear during pulls, undead and Lamiae punish low-HP travel, and Sneak/Invisible plus a known route back to Nashmau makes recovery much easier.",
+        note = "Travel: reach Nashmau, enter Caedarva Mire, or use Dvucca or Azouph Isle staging routes when unlocked. The listed guide marker is Home Point #1, so treat it as an arrival and recovery reference rather than a guaranteed camp spot. Targets: Heraldic Imp, Orderly Imp, Jnun, and Marsh Murre; check each target before pulling and choose a lane that fits the party. Safety: Chigoe, Ephramadian Shade, Draugar Servant, Lamia Chaukidar, and Lamia Fatedealer are also present; keep Sneak and Invisible ready and preserve a known route back to Nashmau or the Home Point.",
     },
     {
         id = "mount_zhayolm_parties_62_75",
@@ -434,6 +434,6 @@ return {
         x = 13.0,
         y = -593.0,
         z = -54.0,
-        note = "Travel: requires Access to Tu'Lia, also called sky access, from the Zilart mission line. Use a Ru'Aun Gardens Home Point or the Survival Guide if unlocked, then gather near the listed sky marker. Targets: Decorative Weapons, Flamingos, Aura Statues, and nearby sky mobs across Lv.70-75. Safety: arcana can aggro or link around magic and sight lines, teleport pads can split the party, and everyone should confirm the same island before pulling.",
+        note = "Travel: requires Tu'Lia access from the Zilart mission line. Use a Ru'Aun Gardens Home Point or the Survival Guide if unlocked. The listed guide marker is the Survival Guide, so use it as an arrival and regroup point rather than a guaranteed pull location. Targets: Flamingo, Groundskeeper, and Sprinkler; check each target before pulling and move to the island that fits the party. Safety: teleport pads can split the party, so confirm the same island and a shared return route before pulling.",
     },
 }

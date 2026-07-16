@@ -348,6 +348,26 @@ local function location_label(source, mark_missing_map)
 end
 
 local function step_location_line(step)
+    if safe_text((step or {}).step_kind) == "exp_camp" then
+        local position = type(step.position) == "table" and step.position or {}
+        local x = rounded_tenth(position.x)
+        local y = rounded_tenth(position.y)
+        if x == nil or y == nil then
+            return nil
+        end
+        local zone_id = tonumber(step.zone_id)
+        local zone = zone_id ~= nil and safe_text(zone_names[zone_id]) or ""
+        if zone == "" then
+            zone = zone_display(zone_id)
+        end
+        local map = target_map_label(step)
+        if map == "" then
+            -- AGENT_MIN: reason=EXP source data has no map-page field; ceiling=presentation fallback only; upgrade=replace when sourced map metadata is added.
+            map = "Map #1"
+        end
+        return "Guide marker: " .. zone .. " - " .. map .. " - X " .. x .. ", Y " .. y
+    end
+
     local location = location_label(step, true)
     if location == "" then
         return nil
@@ -930,7 +950,8 @@ function route_window.render_state(state)
     end
 
     if #summary.step_lines > 0 then
-        table.insert(lines, "Directions:")
+        local section = safe_text((state.objective or {}).objective_kind) == "exp_camp" and "Camp Guide:" or "Directions:"
+        table.insert(lines, section)
         for _, line in ipairs(summary.step_lines) do
             table.insert(lines, line)
         end
@@ -1173,8 +1194,12 @@ local function render_objective_cluster(imgui, state, summary, on_command)
         progress = selected / step_count
         progress_label = "Step " .. tostring(selected) .. " of " .. tostring(step_count)
     end
-    if step_guide then
+    if step_guide or objective_kind == "exp_camp" then
         instruction = ""
+    end
+    if objective_kind == "exp_camp" then
+        progress = nil
+        progress_label = ""
     end
     skin.objective_cluster(imgui, {
         title = title,
@@ -1210,7 +1235,11 @@ function route_window.render(imgui, state, on_command)
     end
 
     if #summary.step_lines > 0 then
-        section_header(imgui, "Directions")
+        if safe_text((state.objective or {}).objective_kind) == "exp_camp" then
+            section_header(imgui, "Camp Guide")
+        else
+            section_header(imgui, "Directions")
+        end
         for _, line in ipairs(summary.step_lines) do
             skin.text_wrapped(imgui, line, "body")
         end
@@ -1246,7 +1275,11 @@ function route_window.render_detailed_information(imgui, state, on_command)
     end
     if #summary.step_lines > 0 then
         local context = detail_context(imgui)
-        detail_section_header(imgui, "Directions", context)
+        if safe_text((state.objective or {}).objective_kind) == "exp_camp" then
+            detail_section_header(imgui, "Camp Guide", context)
+        else
+            detail_section_header(imgui, "Directions", context)
+        end
         for _, line in ipairs(summary.step_lines) do
             detail_text(imgui, line, context, detail_number("body_indent_x", 0.0))
         end
