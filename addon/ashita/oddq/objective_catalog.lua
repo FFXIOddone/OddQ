@@ -374,6 +374,8 @@ local function copy_choices(choices)
                 target_name = safe_text(choice.target_name),
                 map_grid = safe_text(choice.map_grid),
                 position = copy_position(choice.position),
+                target_map_id = tonumber(choice.target_map_id),
+                target_map_label = safe_text(choice.target_map_label),
             })
         end
     end
@@ -1440,6 +1442,9 @@ local function contract_steps(steps)
             zone_id = tonumber(step.zone_id) or 0,
             npc_name = step_target_name(step),
             map_grid = safe_text(step.map_grid),
+            position = copy_position(step.position),
+            target_map_id = tonumber(step.target_map_id),
+            target_map_label = safe_text(step.target_map_label),
             instruction = safe_text(step.instruction),
             required_items = copy_list(step.required_items),
             required_key_items = copy_list(step.required_key_items),
@@ -1511,6 +1516,8 @@ function objective_catalog.to_objective_plan(entry)
                     position = copy_position(first_step.position),
                     npc_name = first_target_name,
                     map_grid = safe_text(first_step.map_grid or entry.first_map_grid),
+                    target_map_id = tonumber(first_step.target_map_id),
+                    target_map_label = safe_text(first_step.target_map_label),
                     instruction = safe_text(first_step.instruction),
                     level_min = tonumber(entry.level_min) or 0,
                     level_max = tonumber(entry.level_max) or 0,

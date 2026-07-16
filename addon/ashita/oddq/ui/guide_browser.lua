@@ -168,6 +168,54 @@ local function first_grid(entry)
     return grid
 end
 
+local function first_map_label(entry)
+    local step = first_step(entry)
+    local label = trim(step.target_map_label)
+    if label ~= "" then
+        return label
+    end
+    local map_id = tonumber(step.target_map_id)
+    if map_id ~= nil and map_id > 0 then
+        return "Map " .. tostring(math.floor(map_id))
+    end
+    return ""
+end
+
+local function coordinate_grid_label(value)
+    local raw = trim(value)
+    if raw == "" or raw:match("[A-Za-z]+/[A-Za-z]+%-[0-9]+") then
+        return ""
+    end
+    local tokens = {}
+    local seen = {}
+    for token in raw:gmatch("[A-Za-z]+%-[0-9]+") do
+        token = token:upper()
+        if seen[token] ~= true then
+            seen[token] = true
+            table.insert(tokens, token)
+        end
+    end
+    if #tokens == 0 then
+        return ""
+    end
+    return "(" .. table.concat(tokens, "/") .. ")"
+end
+
+local function first_location(entry)
+    local map = first_map_label(entry)
+    local grid = coordinate_grid_label(first_grid(entry))
+    if map ~= "" and grid ~= "" then
+        return map .. " - " .. grid
+    end
+    if map ~= "" then
+        return map
+    end
+    if grid ~= "" then
+        return grid .. " - map not recorded"
+    end
+    return ""
+end
+
 local function guide_kind(entry)
     local mode = objective_catalog.mode_for_entry(entry)
     if mode == "missions" then
@@ -227,9 +275,9 @@ local function guide_meta(entry)
         table.insert(parts, level)
     end
     local target = first_target(entry)
-    local grid = first_grid(entry)
+    local location = first_location(entry)
     if target ~= "" then
-        table.insert(parts, target .. (grid ~= "" and " " .. grid or ""))
+        table.insert(parts, target .. (location ~= "" and " - " .. location or ""))
     end
     local step_count = tonumber((entry or {}).step_count) or 0
     if step_count <= 0 and type((entry or {}).steps) == "table" then
@@ -326,12 +374,12 @@ local function append_preview(lines, selected, prefix, include_command)
     end
     local entry = selected.entry or {}
     local target = first_target(entry)
-    local grid = first_grid(entry)
+    local location = first_location(entry)
     table.insert(lines, prefix .. "Guide: " .. selected.label)
     table.insert(lines, prefix .. "Type: " .. guide_kind(entry))
     table.insert(lines, prefix .. "Requirements: " .. prerequisite_summary(entry))
     if target ~= "" then
-        table.insert(lines, prefix .. "Starts at: " .. target .. (grid ~= "" and " " .. grid or ""))
+        table.insert(lines, prefix .. "Starts at: " .. target .. (location ~= "" and " - " .. location or ""))
     end
     local step_count = tonumber(entry.step_count) or (type(entry.steps) == "table" and #entry.steps or 0)
     if step_count > 0 then
@@ -475,7 +523,7 @@ end
 
 local function render_category_row(imgui, state, model, layout)
     for index, category in ipairs(model.categories) do
-        if index > 1 then
+        if index > 1 and not (layout.wrap_categories == true and index == 4) then
             same_line(imgui, tonumber(layout.category_gap) or 6.0)
         end
         local active = category.id == model.category.id
@@ -488,6 +536,15 @@ local function render_category_row(imgui, state, model, layout)
     end
 end
 
+local function result_button_label(label, width)
+    label = trim(label)
+    local max_characters = math.max(8, math.floor((math.max(1.0, tonumber(width) or 1.0) - 16.0) / 8.0))
+    if #label <= max_characters then
+        return label
+    end
+    return label:sub(1, math.max(1, max_characters - 3)):gsub("%s+$", "") .. "..."
+end
+
 local function render_results_pane(imgui, state, model, layout)
     local opened, child = begin_child(imgui, "oddq_guide_browser_results", { layout.results_width, layout.height })
     if opened then
@@ -496,13 +553,14 @@ local function render_results_pane(imgui, state, model, layout)
             text_line(imgui, model.category.empty_hint or "No results.")
         end
         for index, result in ipairs(model.results) do
-            local label = result.label
+            local button_width = math.max(1.0, (tonumber(layout.results_width) or 390.0) - 24.0)
+            local label = result_button_label(result.label, button_width)
             local active = index == model.selected_index
             if skin.button(
                 imgui,
                 label .. "##oddq_browser_result_" .. tostring(index),
                 active and "active" or "secondary",
-                { math.max(1.0, (tonumber(layout.results_width) or 390.0) - 24.0), 0.0 }
+                { button_width, 0.0 }
             ) then
                 state.guide_browser_selected_index = index
             end
@@ -578,13 +636,31 @@ function guide_browser.render(imgui, state, on_command)
         preview_width = tonumber(layout.preview_width) or 430.0,
         height = tonumber(layout.height) or 420.0,
         category_gap = tonumber(layout.category_gap) or 6.0,
+        column_gap = tonumber(layout.column_gap) or 4.0,
     }
+    if imgui ~= nil and imgui.GetWindowWidth ~= nil then
+        local window_width = tonumber(imgui.GetWindowWidth()) or 0.0
+        local available_width = math.max(1.0, window_width - 16.0)
+        local requested_width = child_layout.results_width + child_layout.column_gap + child_layout.preview_width
+        if requested_width > available_width then
+            local pane_width = math.max(1.0, available_width - child_layout.column_gap)
+            child_layout.results_width = math.floor(pane_width * 0.62)
+            child_layout.preview_width = pane_width - child_layout.results_width
+        end
+        child_layout.wrap_categories = window_width < 640.0
+    end
+    if imgui ~= nil and imgui.GetWindowHeight ~= nil then
+        child_layout.height = math.max(
+            140.0,
+            math.min(child_layout.height, (tonumber(imgui.GetWindowHeight()) or 0.0) - 168.0)
+        )
+    end
     render_category_row(imgui, state, model, child_layout)
     if imgui.Separator ~= nil then
         imgui.Separator()
     end
     render_results_pane(imgui, state, model, child_layout)
-    same_line(imgui, tonumber(layout.column_gap) or 4.0)
+    same_line(imgui, child_layout.column_gap)
     render_preview_pane(imgui, model, on_command, child_layout)
 end
 

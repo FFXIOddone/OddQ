@@ -1,6 +1,6 @@
 # CatsEyeXI Runtime Profile
 
-OddQ RC4 uses one CatsEyeXI profile: a local Ashita addon with bundled guide
+OddQ RC5 uses one CatsEyeXI profile: a local Ashita addon with bundled guide
 data. There are no hosted endpoints, replacement keys, allowlists, bridge
 settings, backend services, or server changes to configure.
 
@@ -10,29 +10,31 @@ settings, backend services, or server changes to configure.
 Ashita/addons/oddq
 ```
 
-The addon is loaded with `/addon load oddq` and controlled through `/odd`. It
-does not install an executable, DLL, Windows service, scheduled task, or server
-module.
+The 13-file addon is loaded with `/addon load oddq` and controlled through
+`/odd`. It does not install an executable, DLL, Windows service, scheduled task,
+or server module.
 
 ## Client boundary
 
-OddQ uses Ashita's local APIs to read the current zone, position, heading, and
-level for display. It does not register packet handlers, send game commands,
-control other addons, or automate player actions.
+OddQ renders bundled guide data in one shared, movable and resizable Browser /
+Guide window. It does not inspect or track player state, register packet
+handlers, send game commands, control other addons, or automate player actions.
+It ships no Pointer window or Settings popup.
 
-Its only persistent files are first-launch state and pointer preferences under
-`config/addons/oddq` in the active Ashita installation.
+Its only persistent file is the first-launch marker at
+`config/addons/oddq/first-launch-seen.txt` in the active Ashita installation.
 
 ## Staff review checklist
 
-- Confirm the archive's addon tree matches `MANIFEST.json` and
+- Confirm the archive's 13-file addon tree matches `MANIFEST.json` and
   `SHA256SUMS.txt`.
 - Confirm no network, bridge, backend, updater, or telemetry module is shipped.
-- Confirm no packet or outgoing-command API is referenced.
-- Confirm the one-window browser/guide flow, optional pointer, and Settings
-  popup are the complete UI surface.
-- Confirm a missing coordinate remains a checkpoint or manual cue.
+- Confirm no packet, outgoing-command, or player-state API is referenced.
+- Confirm Browser and Guide are the complete UI surface in one shared window.
+- Confirm a sourced map number appears beside its grid and an unknown map
+  number is explicitly labeled `map not recorded`.
 - Confirm the addon does not automatically advance a guide or claim arrival.
+- Confirm its only local write is the first-launch marker.
 
 Useful offline scans:
 
@@ -48,5 +50,5 @@ fetch those URLs at runtime.
 
 Source scans, Lua syntax checks, unit tests, layout probes, and archive checks
 are offline evidence. They do not prove live-client UI behavior. CatsEyeXI
-window interaction is not automated for RC4; in-game review is manual and must
+window interaction is not automated for RC5; in-game review is manual and must
 be performed only by an authorized tester.

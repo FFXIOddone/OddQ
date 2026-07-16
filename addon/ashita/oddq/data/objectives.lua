@@ -2770,6 +2770,8 @@ return {
     required_key_items = {"Ephramadian gold coin"},
     step_id = "enter_cutter_battlefield",
     step_kind = "battlefield",
+    target_map_id = 5,
+    target_map_label = "Map 5",
     zone_id = 54,
   }, {
     instruction = "Fight the Ashu Talif Crew: the first wave includes two Rangers, two Red Mages, and one Corsair. After those five fall, a second group and the Ashu Talif Captain appear. Reduce the Captain to about 20% HP to win; after the fight you land in Nashmau.",
@@ -3691,6 +3693,8 @@ return {
     required_key_items = {"Periqia Assault area entry permit"},
     step_id = "approach_cutter",
     step_kind = "inspect",
+    target_map_id = 5,
+    target_map_label = "Map 5",
     zone_id = 54,
   }},
   },
@@ -5039,6 +5043,8 @@ return {
     required_key_items = {},
     step_id = "no_nyzul_trade_bhaflau",
     step_kind = "trade",
+    target_map_id = 1,
+    target_map_label = "Map 1",
     zone_id = 52,
   }, {
     instruction = "Alternate if you already have quick Nashmau access: leave Nashmau by the east exit, then trade one Imperial Silver Piece to Tyamah in Caedarva Mire at (J-10).",
@@ -5062,6 +5068,8 @@ return {
     required_key_items = {"Astral compass"},
     step_id = "gilded_doors_cutscene",
     step_kind = "inspect",
+    target_map_id = 7,
+    target_map_label = "Map 7",
     zone_id = 72,
   }, {
     instruction = "Before leaving, unlock Nyzul Isle Staging Point. Enter the Gilded Doors and take the transporter to the left; stay left because Apex Gears are to the right. On Map 3, take the left portal again, then exit south and follow east through the Gilded Doors to Nyzul Isle Staging Point.",
@@ -23798,6 +23806,8 @@ return {
     required_key_items = {},
     step_id = "step_01_instruction_this_quest_is_repeatable",
     step_kind = "instruction",
+    target_map_id = 2,
+    target_map_label = "Map 2",
     zone_id = 151,
   }, {
     instruction = "Find the Yagudo Outlaw on the second floor of the north courtyard. *F exit on map 2",
@@ -23809,6 +23819,8 @@ return {
     required_key_items = {},
     step_id = "step_02_instruction_find_the_yagudo_outlaw",
     step_kind = "instruction",
+    target_map_id = 2,
+    target_map_label = "Map 2",
     zone_id = 0,
   }, {
     instruction = "He will ask you to retrieve both a [Seven-knot quipu] and [Thirteen-knot quipu]. This is a one-time cost.",

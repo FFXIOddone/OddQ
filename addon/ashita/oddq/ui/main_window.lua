@@ -57,16 +57,14 @@ local function normalized_view(state, objective)
     return "browse"
 end
 
-local function route_state(state, route, objective, active_segment_index)
+local function route_state(state, objective)
     return {
         guidance = state,
         objective = objective,
-        route = route,
-        active_segment_index = active_segment_index,
     }
 end
 
-function main_window.render_state(state, objective, route, active_segment_index)
+function main_window.render_state(state, objective)
     state = state or {}
     local view = normalized_view(state, objective)
     local lines = {
@@ -75,7 +73,7 @@ function main_window.render_state(state, objective, route, active_segment_index)
     }
     if view == "guide" then
         table.insert(lines, "Back to Guides")
-        for line in route_window.render_state(route_state(state, route, objective, active_segment_index)):gmatch("[^\n]+") do
+        for line in route_window.render_state(route_state(state, objective)):gmatch("[^\n]+") do
             if line ~= "OddQ" then
                 table.insert(lines, line)
             end
@@ -89,16 +87,6 @@ function main_window.render_state(state, objective, route, active_segment_index)
         end
     end
     return table.concat(lines, "\n")
-end
-
-local function same_line(imgui, gap)
-    if imgui == nil or imgui.SameLine == nil then
-        return
-    end
-    local ok = pcall(imgui.SameLine, 0.0, tonumber(gap) or 8.0)
-    if not ok then
-        imgui.SameLine()
-    end
 end
 
 local function render_resume_strip(imgui, state, objective)
@@ -116,39 +104,22 @@ local function render_resume_strip(imgui, state, objective)
 end
 
 local function render_browser(imgui, state, objective, on_command)
-    if skin.button(imgui, "Settings##oddq_open_settings", "secondary") then
-        state.settings_open = true
-    end
-    if imgui.Separator ~= nil then
-        imgui.Separator()
-    end
     render_resume_strip(imgui, state, objective)
     guide_browser.render(imgui, state, on_command)
 end
 
-local function render_guide(imgui, state, objective, route, active_segment_index, on_command)
+local function render_guide(imgui, state, objective, on_command)
     if skin.button(imgui, "Back to Guides##oddq_back_to_guides", "secondary") then
         state.main_view = "browse"
         return
     end
-    same_line(imgui, 8.0)
-    if skin.button(imgui, "Settings##oddq_open_settings", "secondary") then
-        state.settings_open = true
-    end
     if imgui.Separator ~= nil then
         imgui.Separator()
     end
-    route_window.render(imgui, route_state(state, route, objective, active_segment_index), on_command)
+    route_window.render(imgui, route_state(state, objective), on_command)
 end
 
-function main_window.render(
-    imgui,
-    state,
-    objective,
-    route,
-    active_segment_index,
-    on_command
-)
+function main_window.render(imgui, state, objective, on_command)
     if imgui == nil or imgui.Begin == nil or imgui.End == nil then
         return
     end
@@ -157,7 +128,21 @@ function main_window.render(
     end
 
     local layout = skin.layout.main_window or {}
-    imgui.SetNextWindowSize({ layout.width or 820.0, layout.height or 560.0 }, ImGuiCond_FirstUseEver)
+    local width = tonumber(layout.width) or 820.0
+    local height = tonumber(layout.height) or 560.0
+    local min_width = math.min(tonumber(layout.min_width) or 480.0, width)
+    local min_height = math.min(tonumber(layout.min_height) or 320.0, height)
+    local max_width = math.max(min_width, tonumber(layout.max_width) or width)
+    local max_height = math.max(min_height, tonumber(layout.max_height) or height)
+    if imgui.SetNextWindowSize ~= nil then
+        imgui.SetNextWindowSize({ width, height }, ImGuiCond_FirstUseEver)
+    end
+    if imgui.SetNextWindowSizeConstraints ~= nil then
+        imgui.SetNextWindowSizeConstraints(
+            { min_width, min_height },
+            { max_width, max_height }
+        )
+    end
     local pushed = skin.push_window(imgui)
     local visible, open = window_state.begin(imgui, "OddQ", true, 0)
     if not open then
@@ -168,7 +153,7 @@ function main_window.render(
         local view = normalized_view(state, objective)
         state.main_view = view
         if view == "guide" then
-            render_guide(imgui, state, objective, route, active_segment_index, on_command)
+            render_guide(imgui, state, objective, on_command)
         else
             render_browser(imgui, state, objective, on_command)
         end

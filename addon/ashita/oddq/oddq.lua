@@ -1,17 +1,14 @@
 addon.name = "oddq"
 addon.author = "Odd"
-addon.version = "0.1.0-rc4"
-addon.desc = "Local quest and mission guidance with an objective pointer."
+addon.version = "0.1.0-rc5"
+addon.desc = "Local quest and mission guide browser."
 
 require("common")
 
 local route_window = require("ui/route_window")
 local guidance_state = require("guidance_state")
-local map_layers = require("ui/map_layers")
-local player_state = require("player_state")
+local main_window = require("ui/main_window")
 local objective_catalog = require("objective_catalog")
-local objective_pointer = require("objective_pointer")
-local arrow_overlay = require("ui/arrow_overlay")
 local local_filesystem = require("local_filesystem")
 
 local imgui_ok, imgui = pcall(require, "imgui")
@@ -23,7 +20,6 @@ local oddq = {
     visible = false,
     guidance = guidance_state.new(),
     tracked_objective = nil,
-    active_segment_index = 1,
 }
 
 local category_modes = {
@@ -75,18 +71,21 @@ local function ashita_install_path()
             return path:gsub("\\", "/"):gsub("/$", "")
         end
     end
-    return "."
+    return nil
 end
 
 local function first_launch_seen_path()
-    return ashita_install_path() .. "/config/addons/oddq/first-launch-seen.txt"
-end
-
-local function guidance_preferences_path()
-    return ashita_install_path() .. "/config/addons/oddq/preferences.txt"
+    local install_path = ashita_install_path()
+    if install_path == nil then
+        return nil
+    end
+    return install_path .. "/config/addons/oddq/first-launch-seen.txt"
 end
 
 local function file_exists(path)
+    if type(path) ~= "string" or path == "" then
+        return false
+    end
     local file = io.open(path, "r")
     if file == nil then
         return false
@@ -96,6 +95,9 @@ local function file_exists(path)
 end
 
 local function write_text(path, document)
+    if type(path) ~= "string" or path == "" then
+        return false
+    end
     if not local_filesystem.ensure_parent(path) then
         return false
     end
@@ -108,57 +110,21 @@ local function write_text(path, document)
     return true
 end
 
-local saved_guidance_preferences = nil
-
-local function mark_first_launch_seen()
-    return write_text(first_launch_seen_path(), os.date("!%Y-%m-%dT%H:%M:%SZ"))
-end
-
-local function load_guidance_preferences()
-    local file = io.open(guidance_preferences_path(), "r")
-    if file == nil then
-        saved_guidance_preferences = nil
-        return false
-    end
-    local document = file:read("*a")
-    file:close()
-    guidance_state.apply_preferences(oddq.guidance, document)
-    saved_guidance_preferences = document
-    return true
-end
-
-local function save_guidance_preferences()
-    if oddq.guidance.first_launch_seen ~= true then
-        return false
-    end
-    local document = guidance_state.serialize_preferences(oddq.guidance)
-    if document == saved_guidance_preferences then
-        return true
-    end
-    if not write_text(guidance_preferences_path(), document) then
-        return false
-    end
-    saved_guidance_preferences = document
-    return true
+local function mark_first_launch_seen(path)
+    return write_text(path, os.date("!%Y-%m-%dT%H:%M:%SZ"))
 end
 
 local function apply_first_launch_state()
-    local seen = file_exists(first_launch_seen_path())
+    local marker_path = first_launch_seen_path()
+    local seen = file_exists(marker_path)
+    local can_persist_marker = marker_path ~= nil
     oddq.guidance.first_launch_seen = true
     oddq.guidance.main_view = "browse"
-    oddq.guidance.main_window_open = not seen
-    oddq.guidance.settings_open = false
-    oddq.guidance.arrow.visible = false
-    oddq.visible = not seen
-    if seen then
-        load_guidance_preferences()
-    else
-        mark_first_launch_seen()
+    oddq.guidance.main_window_open = can_persist_marker and not seen
+    oddq.visible = can_persist_marker and not seen
+    if can_persist_marker and not seen then
+        mark_first_launch_seen(marker_path)
     end
-end
-
-local function build_live_state()
-    return player_state.current_live_context({ current_zone_id = 0 })
 end
 
 local function current_guidance_objective()
@@ -179,7 +145,6 @@ end
 local function open_browser(mode, query, category)
     oddq.guidance.main_view = "browse"
     oddq.guidance.main_window_open = true
-    oddq.guidance.settings_open = false
     oddq.visible = true
     if category ~= nil then
         oddq.guidance.guide_browser_category = category
@@ -196,7 +161,6 @@ end
 local function open_guide()
     oddq.guidance.main_view = "guide"
     oddq.guidance.main_window_open = true
-    oddq.guidance.settings_open = false
     oddq.visible = true
 end
 
@@ -204,12 +168,6 @@ local function entry_label(entry)
     return trim((entry or {}).name) ~= "" and trim(entry.name)
         or trim((entry or {}).objective_id) ~= "" and trim(entry.objective_id)
         or "selected guide"
-end
-
-local function enable_pointer_for_current_guide()
-    local display = ((oddq.guidance.preferences or {}).display or {})
-    oddq.guidance.arrow.visible = display.show_pointer ~= false
-        and objective_pointer.supports(oddq.tracked_objective)
 end
 
 local function load_local_catalog_guide(entry)
@@ -227,11 +185,9 @@ local function load_local_catalog_guide(entry)
     objective.mode = objective_catalog.mode_for_entry(entry)
     oddq.tracked_objective = objective
     oddq.guidance.active_mode = objective.mode or oddq.guidance.active_mode
-    oddq.active_segment_index = 1
 
     local steps = oddq.tracked_objective.steps
     oddq.guidance.guide_step_tab_index = type(steps) == "table" and #steps > 0 and 1 or 0
-    enable_pointer_for_current_guide()
     open_guide()
     print("odd guide loaded: " .. entry_label(entry))
     return true
@@ -264,17 +220,10 @@ local function load_query(query, mode)
     return load_local_catalog_guide(entry)
 end
 
-local function pointer_route(live_state)
-    return objective_pointer.build_route(current_guidance_objective(), oddq.guidance, live_state or build_live_state())
-end
-
 local function route_window_output()
-    local live_state = build_live_state()
     return route_window.render_state({
         guidance = oddq.guidance,
         objective = current_guidance_objective(),
-        route = pointer_route(live_state),
-        active_segment_index = 1,
         known_items = {},
         known_key_items = {},
     })
@@ -328,7 +277,6 @@ local function move_guide_step(delta)
         return false
     end
     oddq.guidance.guide_step_tab_index = next_selected
-    enable_pointer_for_current_guide()
     return true
 end
 
@@ -366,30 +314,18 @@ local function print_help()
     print("/odd missions|quests|jobs|exp - browse a guide category")
     print("/odd next|previous - move through the loaded guide")
     print("/odd status - print the current step")
-    print("/odd settings - open pointer settings")
     print("/odd close - close OddQ")
 end
 
-local function render_ui(live_state)
+local function render_ui()
     if imgui == nil or oddq.visible ~= true then
         return
     end
 
-    live_state = live_state or build_live_state()
     local objective = current_guidance_objective()
-    local route = objective_pointer.build_route(objective, oddq.guidance, live_state)
-    map_layers.render(imgui, oddq.guidance, live_state.current_zone_id, route, objective, 1, function(args)
+    main_window.render(imgui, oddq.guidance, objective, function(args)
         handle_command(args or {})
     end)
-
-    local display = ((oddq.guidance.preferences or {}).display or {})
-    if display.show_pointer ~= false
-        and type(oddq.guidance.arrow) == "table"
-        and oddq.guidance.arrow.visible == true
-        and route ~= nil
-    then
-        arrow_overlay.render(imgui, oddq.guidance, route, 1, live_state)
-    end
 end
 
 local function handle_plan_command(args)
@@ -421,15 +357,7 @@ function handle_command(args)
     end
     if command == "close" then
         oddq.guidance.main_window_open = false
-        oddq.guidance.settings_open = false
-        oddq.guidance.arrow.visible = false
         oddq.visible = false
-        return
-    end
-    if command == "settings" or command == "preferences" then
-        oddq.guidance.settings_open = true
-        oddq.guidance.main_window_open = true
-        oddq.visible = true
         return
     end
     if command == "back" then
@@ -510,7 +438,7 @@ end)
 
 ashita.events.register("load", "oddq_load", function()
     -- ODD_SECURITY_NOTE: local guidance only; no networking, packet events, movement, targeting, trading, or chat upload.
-    -- ODD_FILE_WRITE: first-launch and pointer preferences only, under config/addons/oddq.
+    -- ODD_FILE_WRITE: first-launch marker only, under config/addons/oddq.
     apply_first_launch_state()
     if oddq.guidance.main_window_open then
         print("OddQ loaded. Guide Browser is open.")
@@ -521,7 +449,6 @@ end)
 
 ashita.events.register("d3d_present", "oddq_mvp_render", function()
     render_ui()
-    save_guidance_preferences()
 end)
 
 return oddq

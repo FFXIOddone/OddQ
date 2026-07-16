@@ -43,6 +43,7 @@ skin.layout = {
         title_indent_x = 6.0,
         subtitle_indent_x = 10.0,
         text_right_inset = 5.0,
+        text_bottom_inset = 2.0,
         title_subtitle_gap = 0.0,
         instruction_gap = 5.0,
         instruction_indent_x = 15.0,
@@ -85,6 +86,10 @@ skin.layout = {
     main_window = {
         width = 820.0,
         height = 560.0,
+        min_width = 480.0,
+        min_height = 320.0,
+        max_width = 820.0,
+        max_height = 560.0,
         section_gap = 0.0,
         mode_button_gap = 0.0,
         nav_button_gap = 0.0,
@@ -98,18 +103,6 @@ skin.layout = {
             search_width = -1.0,
             limit = 8.0,
         },
-    },
-    settings_window = {
-        width = 420.0,
-        height = 170.0,
-    },
-    direction_cue = {
-        width = 360.0,
-        height = 126.0,
-        alpha = 0.82,
-        arrow_size = 58.0,
-        arrow_gap = 14.0,
-        label_gap = 14.0,
     },
     window = {
         alpha = 0.93,
@@ -663,7 +656,9 @@ local function objective_cluster_title_height(imgui, model, layout, panel_width)
         content_height = content_height + (layout.title_subtitle_gap or 0.0) + subtitle_height
     end
 
-    return ((layout.padding_y or 0.0) * 2.0) + content_height
+    return ((layout.padding_y or 0.0) * 2.0)
+        + content_height
+        + (layout.text_bottom_inset or 0.0)
 end
 
 function skin.objective_cluster(imgui, model, handlers)

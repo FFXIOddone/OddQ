@@ -17,49 +17,11 @@ local exp_type_labels = {
     parties = "EXP Parties",
 }
 
-local persisted_boolean_paths = {
-    { key = "display.show_pointer", path = { "preferences", "display", "show_pointer" } },
-}
-
-local function nested_value(root, path)
-    local value = root
-    for _, key in ipairs(path) do
-        if type(value) ~= "table" then
-            return nil
-        end
-        value = value[key]
-    end
-    return value
-end
-
-local function set_nested_value(root, path, value)
-    local target = root
-    for index = 1, #path - 1 do
-        target = type(target) == "table" and target[path[index]] or nil
-        if type(target) ~= "table" then
-            return false
-        end
-    end
-    target[path[#path]] = value
-    return true
-end
-
 function guidance_state.new()
     return {
         first_launch_seen = false,
         main_window_open = false,
         main_view = "browse",
-        settings_open = false,
-        preferences = {
-            display = {
-                show_pointer = true,
-            },
-        },
-        arrow = {
-            visible = false,
-            x = 760,
-            y = 390,
-        },
         modes = {
             missions = true,
             jobs = true,
@@ -80,35 +42,6 @@ function guidance_state.new()
         active_mode = "missions",
         status_message = "OddQ ready.",
     }
-end
-
-function guidance_state.serialize_preferences(state)
-    local lines = { "version=1" }
-    for _, field in ipairs(persisted_boolean_paths) do
-        table.insert(lines, field.key .. "=" .. tostring(nested_value(state, field.path) == true))
-    end
-    return table.concat(lines, "\n") .. "\n"
-end
-
-function guidance_state.apply_preferences(state, document)
-    if type(state) ~= "table" or type(document) ~= "string" then
-        return 0
-    end
-    local fields = {}
-    for _, field in ipairs(persisted_boolean_paths) do
-        fields[field.key] = field
-    end
-    local applied = 0
-    for line in document:gmatch("[^\r\n]+") do
-        local key, raw_value = line:match("^([%w_%.]+)=([%a]+)$")
-        local valid_value = raw_value == "true" or raw_value == "false"
-        local field = valid_value and key ~= nil and fields[key] or nil
-        if field ~= nil and set_nested_value(state, field.path, raw_value == "true") then
-            applied = applied + 1
-        end
-    end
-    guidance_state.pick_active_mode(state)
-    return applied
 end
 
 function guidance_state.mode_label(mode)

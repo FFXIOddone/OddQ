@@ -1,22 +1,35 @@
-# OddQ RC4 Review Guide
+# OddQ RC5 Review Guide
 
 This is the shortest review path for the local-only OddQ MVP.
 
 ## What ships
 
-The runtime is the Lua addon under `addon/ashita/oddq`. Its player-facing
-surface is deliberately small:
+The release contains exactly 13 runtime Lua/data files under
+`Ashita/addons/oddq`:
 
-- `oddq.lua` owns Ashita events and `/odd` command routing.
-- `ui/main_window.lua` owns the one shared browser/guide window.
-- `ui/route_window.lua` renders the current guide step and Previous/Next.
-- `objective_pointer.lua` resolves exact targets, zone checkpoints, and manual
-  cues.
-- `ui/arrow_overlay.lua` owns the optional `OddQ Pointer` window.
-- `ui/settings_window.lua` owns the Settings popup.
+```text
+oddq.lua
+guidance_state.lua
+objective_catalog.lua
+local_filesystem.lua
+ui/guide_browser.lua
+ui/imgui_text.lua
+ui/main_window.lua
+ui/route_window.lua
+ui/skin.lua
+ui/window_state.lua
+data/objectives.lua
+data/exp_camps.lua
+data/zone_names.lua
+```
 
-The release does not require or start a bridge, backend, service, helper
-executable, updater, or server component.
+`oddq.lua` owns Ashita events and `/odd` command routing.
+`ui/main_window.lua` owns the one movable, resizable window that switches
+between Browser and Guide. `ui/route_window.lua` renders the current step and
+Previous/Next controls.
+
+There is no Pointer window, Settings popup, Guide Hub, player-state tracker,
+bridge, backend, service, helper executable, updater, or server component.
 
 ## Runtime review
 
@@ -24,11 +37,12 @@ Review these properties directly in the shipped Lua tree:
 
 1. There is no outgoing-command or packet-mutation API.
 2. No network client or endpoint is loaded by the addon.
-3. The D3D-present handler reads local player context, renders UI, and saves
-   preferences; it does not automate gameplay.
-4. Missing coordinates remain labeled transition checkpoints or manual cues;
-   they never receive a fabricated world direction.
-5. Closing OddQ closes the guide, pointer, and Settings surfaces.
+3. The D3D-present handler renders bundled local guide data; it does not inspect
+   player state or automate gameplay.
+4. A source-backed map number appears beside its grid. If only the grid is
+   established, the UI explicitly says `map not recorded` rather than guessing.
+5. The only local write is the first-launch marker.
+6. Closing `OddQ` leaves no second OddQ window or popup behind.
 
 Useful source scans:
 
@@ -47,22 +61,22 @@ data, not network calls.
 Run this checklist manually in an approved environment:
 
 1. Load with `/addon load oddq` and open with `/odd`.
-2. Confirm the browser and loaded guide reuse the same `OddQ` window.
-3. Search for a guide, load it, and use Previous/Next.
-4. Confirm Settings only controls the objective pointer.
-5. In the objective zone, confirm a coordinate-backed step renders the literal
-   rotating arrow toward its target.
-6. In another zone, confirm a fixed transition arrow names the destination and
-   detailed travel guidance remains in the Guide.
-7. Confirm a non-spatial manual step does not open a fake pointer.
+2. Confirm Browser and Guide reuse the same `OddQ` window.
+3. Move and resize the window; confirm it remains usable from 480x320 through
+   its content-bounded 820x560 maximum.
+4. Search for a guide, load it, and use Previous/Next.
+5. Confirm a step with sourced map data shows `Map N` beside its grid.
+6. Confirm a grid without a sourced map number says `map not recorded` and
+   does not silently become `Map 1`.
+7. Confirm no Pointer, Settings, or other OddQ window appears.
 8. Close the window and confirm no OddQ UI remains open.
 
 ## Release artifact
 
-The release zip should contain the installable `Ashita/addons/oddq` tree plus
-release notes, a file manifest, and `SHA256SUMS.txt`. It should not contain
-development caches, private paths, captures, credentials, executables, or
-unrelated projects.
+The release zip should contain the installable 13-file
+`Ashita/addons/oddq` tree plus release notes, a file manifest, and
+`SHA256SUMS.txt`. It should not contain development caches, private paths,
+captures, credentials, executables, or unrelated projects.
 
 Verify the checksum manifest after extracting the archive and review
 `SECURITY.md`, `CATSEYEXI_HOSTED.md`, and the repository `../NOTICE.md`
@@ -71,13 +85,12 @@ alongside the addon.
 ## Evidence boundary
 
 Offline tests and layout probes establish source and package contracts. They do
-not establish live-client UX. RC4 makes no automated CatsEyeXI-window test claim;
-the player-facing checklist above remains a manual review step.
+not establish live-client UX. RC5 makes no automated CatsEyeXI-window test
+claim; the player-facing checklist above remains a manual review step.
 
 ## Known limitations
 
-- The pointer is guidance, not pathfinding or movement automation.
-- Some steps have only a destination zone or map-grid checkpoint.
-- Non-spatial steps intentionally remain manual.
+- OddQ provides written guidance, not pathfinding or movement automation.
+- Some steps have no source-backed map number and are labeled accordingly.
 - Guide correctness and server-specific route quality should be reported and
   improved incrementally during the prerelease.

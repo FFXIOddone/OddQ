@@ -297,10 +297,61 @@ local function map_grid_label(source)
     if map_grid == "" then
         return ""
     end
-    if map_grid:match("^%b()$") then
-        return map_grid
+    if map_grid:match("[A-Za-z]+/[A-Za-z]+%-[0-9]+") then
+        return ""
     end
-    return "(" .. map_grid .. ")"
+    local tokens = {}
+    local seen = {}
+    for token in map_grid:gmatch("[A-Za-z]+%-[0-9]+") do
+        token = token:upper()
+        if seen[token] ~= true then
+            seen[token] = true
+            table.insert(tokens, token)
+        end
+    end
+    if #tokens == 0 then
+        return ""
+    end
+    return "(" .. table.concat(tokens, "/") .. ")"
+end
+
+local function target_map_label(source)
+    if type(source) ~= "table" then
+        return ""
+    end
+
+    local label = safe_text(source.target_map_label)
+    if label ~= "" then
+        return label
+    end
+    local map_id = tonumber(source.target_map_id)
+    if map_id == nil or map_id <= 0 then
+        return ""
+    end
+    return "Map " .. tostring(math.floor(map_id))
+end
+
+local function location_label(source, mark_missing_map)
+    local map = target_map_label(source)
+    local grid = map_grid_label(source)
+    if map ~= "" and grid ~= "" then
+        return map .. " - " .. grid
+    end
+    if map ~= "" then
+        return map
+    end
+    if grid ~= "" and mark_missing_map == true then
+        return grid .. " - map not recorded"
+    end
+    return grid
+end
+
+local function step_location_line(step)
+    local location = location_label(step, true)
+    if location == "" then
+        return nil
+    end
+    return "Location: " .. location
 end
 
 local function named_map_grid_label(source)
@@ -309,11 +360,11 @@ local function named_map_grid_label(source)
         return ""
     end
 
-    local map_grid = map_grid_label(source)
-    if map_grid == "" then
+    local location = location_label(source, true)
+    if location == "" then
         return name
     end
-    return name .. " " .. map_grid
+    return name .. " - " .. location
 end
 
 local function normalized_name(value)
@@ -346,10 +397,8 @@ local function known_requirement_state(state)
 
     append_known_names(known_items, state.known_items)
     append_known_names(known_items, (state.known_transport_flags or {}).items)
-    append_known_names(known_items, ((state.player_state or {}).known_transport_flags or {}).items)
     append_known_names(known_key_items, state.known_key_items)
     append_known_names(known_key_items, state.key_items)
-    append_known_names(known_key_items, (state.player_state or {}).key_items)
 
     local item_lookup = {}
     for _, item in ipairs(known_items) do
@@ -572,11 +621,6 @@ local function step_line(step, index, known)
 
     local prefix = requirement_prefix(step, known or { item_lookup = {}, key_item_lookup = {} })
     local line = tostring(index) .. ". " .. prefix .. safe_text(instruction)
-    local map_grid = map_grid_label(step)
-    local raw_map_grid = safe_text(step.map_grid)
-    if map_grid ~= "" and raw_map_grid ~= "" and safe_text(instruction):find(raw_map_grid, 1, true) == nil then
-        line = line .. " " .. map_grid
-    end
     return line
 end
 
@@ -748,6 +792,11 @@ local function render_guide_step(imgui, objective, selected, max_index, known, c
         line = line:gsub("^%d+%.%s*", "")
         detail_text(imgui, line, context, detail_number("body_indent_x", 0.0))
     end
+    local location = step_location_line(step)
+    if location ~= nil then
+        detail_gap(imgui, detail_number("note_gap", 2.0))
+        detail_text(imgui, location, context, detail_number("note_indent_x", 0.0))
+    end
     for _, note_line in ipairs(step_note_lines(step)) do
         detail_gap(imgui, detail_number("note_gap", 2.0))
         detail_text(imgui, note_line, context, detail_number("note_indent_x", 0.0))
@@ -814,6 +863,10 @@ local function objective_step_lines(objective, known)
             if line ~= nil then
                 table.insert(lines, line)
             end
+            local location = step_location_line(step)
+            if location ~= nil then
+                table.insert(lines, "   " .. location)
+            end
             for _, note_line in ipairs(step_note_lines(step)) do
                 table.insert(lines, note_line)
             end
@@ -828,9 +881,15 @@ local function objective_step_lines(objective, known)
         zone_id = objective.zone_id,
         npc_name = objective.npc_name,
         map_grid = objective.map_grid,
+        target_map_id = objective.target_map_id,
+        target_map_label = objective.target_map_label,
     }, 1, known)
     if line ~= nil then
         table.insert(lines, line)
+    end
+    local location = step_location_line(objective)
+    if location ~= nil then
+        table.insert(lines, "   " .. location)
     end
     return lines
 end
@@ -943,6 +1002,9 @@ local function compact_map_grid_label(source)
     if map_grid == "" then
         return ""
     end
+    if map_grid:match("[A-Za-z]+/[A-Za-z]+%-[0-9]+") then
+        return ""
+    end
 
     local tokens = {}
     local seen = {}
@@ -965,15 +1027,27 @@ local function compact_map_grid_label(source)
     return map_grid_label(source)
 end
 
+local function compact_location_label(source)
+    local map = target_map_label(source)
+    local grid = compact_map_grid_label(source)
+    if map ~= "" and grid ~= "" then
+        return map .. " " .. grid
+    end
+    if map ~= "" then
+        return map
+    end
+    return grid
+end
+
 local function compact_step_target(step)
     if type(step) ~= "table" then
         return ""
     end
 
     local target = compact_target_name(step_target_name(step))
-    local map_grid = compact_map_grid_label(step)
-    if target ~= "" and map_grid ~= "" then
-        return ellipsize(target .. " " .. map_grid, 44)
+    local location = compact_location_label(step)
+    if target ~= "" and location ~= "" then
+        return ellipsize(target .. " " .. location, 44)
     end
     if target ~= "" then
         return target

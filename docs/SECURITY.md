@@ -1,21 +1,21 @@
 # OddQ Security
 
-OddQ RC4 is a local, guidance-only Ashita addon. It is not gameplay automation
+OddQ RC5 is a local, guidance-only Ashita addon. It is not gameplay automation
 and does not require a companion process or server component.
 
 ## Runtime boundary
 
-The shipped addon:
+The shipped 13-file addon:
 
-- renders a local guide browser, current-step view, pointer, and Settings;
-- reads current zone, player position and heading, and level through Ashita's
-  local APIs;
-- reads bundled guide and target data; and
-- writes only first-launch state and pointer preferences under Ashita's local
+- renders a local Guide Browser and Guide in one shared window;
+- reads bundled guide data; and
+- writes only a first-launch marker under Ashita's local
   `config/addons/oddq` directory.
 
 The shipped addon does not:
 
+- inspect or track player zone, position, heading, level, or activity;
+- ship a Pointer window, Settings popup, or player-state module;
 - make network requests or load a bridge, backend, updater, or telemetry client;
 - register packet handlers or inject, mutate, or send packets;
 - issue movement, targeting, trading, combat, or addon-control commands;
@@ -24,22 +24,22 @@ The shipped addon does not:
 
 ## Fail-closed guidance
 
-OddQ does not fabricate position data. If a step lacks an available exact coordinate,
-it remains a zone/map checkpoint or a manual cue. If live position is
-unavailable, the pointer cannot claim a direction or arrival. Guide progression
-is manual.
+OddQ does not fabricate position data or map data. A source-backed map number
+appears beside the objective grid. When a grid is known but its map number is
+not established, the UI explicitly says `map not recorded`. Guide progression
+remains manual.
 
 ## Local files
 
-OddQ may create these text files below the active Ashita installation:
+OddQ may create one text file below the active Ashita installation:
 
 ```text
 config/addons/oddq/first-launch-seen.txt
-config/addons/oddq/preferences.txt
 ```
 
-They contain only first-launch state and display preferences. They must not
-contain chat, credentials, private messages, or raw packet data.
+It records only that the addon has launched. OddQ does not create a preferences
+file, and the marker must not contain chat, credentials, private messages, or
+raw packet data.
 
 ## Reporting a security issue
 
@@ -48,5 +48,5 @@ Do not post credentials, private logs, or unredacted process output in a public
 issue. Include the OddQ version, operating system, Ashita version, reproduction
 steps, and a redacted description of the impact.
 
-RC4 is a prerelease. Security claims cover the shipped addon files, not
+RC5 is a prerelease. Security claims cover the shipped addon files, not
 third-party launchers, the game client, Ashita itself, or external plugins.

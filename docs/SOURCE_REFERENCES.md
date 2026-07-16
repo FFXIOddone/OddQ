@@ -15,7 +15,7 @@ The current guide set uses these reference families:
 - Structured CatsEyeXI-compatible zone, NPC, and target records normalized
   during development for coordinate and checkpoint lookup.
 - Project-authored curation that turns source facts into categories, step
-  boundaries, search aliases, and conservative pointer targets.
+  boundaries, search aliases, and source-backed map/location labels.
 
 Where available, generated objective records retain a `source_url`. A source
 URL is attribution metadata; the addon does not fetch it at runtime.
@@ -28,5 +28,7 @@ code.
 ## Regeneration rule
 
 Data regeneration must preserve source attribution and must not replace an
-unknown coordinate with a guess. CatsEyeXI-specific facts stay distinguishable
-from retail reference material, and manual curation stays identifiable as such.
+unknown coordinate or map number with a guess. A known grid without a reliable
+map number remains explicitly labeled `map not recorded`. CatsEyeXI-specific
+facts stay distinguishable from retail reference material, and manual curation
+stays identifiable as such.
