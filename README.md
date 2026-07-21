@@ -9,8 +9,9 @@ no objective pointer, Settings popup, or player-state tracking.
 
 ## Release status
 
-`v1.0.1` is the current stable patch release. It fixes repeated EXP-camp
-guidance while improving camp metadata and target copy. The retired Guide Hub,
+`v1.0.2` is the current stable patch release. It adds an explicit source license
+and CatsEyeXI redistribution note on top of the v1.0.1 EXP-camp improvements.
+The retired Guide Hub,
 objective pointer, Settings popup, developer tuner, map-pin panel, route bridge,
 pilot tools, and packet-driven progression are not part of the runtime or
 release package.
@@ -31,7 +32,7 @@ these are arrival or reset references, not verified pull locations.
 
 ## Install
 
-Download the v1.0.1 release archive and copy:
+Download the v1.0.2 release archive and copy:
 
 ```text
 Ashita/addons/oddq -> <Ashita>/addons/oddq
@@ -76,6 +77,15 @@ See [docs/SECURITY.md](docs/SECURITY.md) and
 [docs/REVIEW_GUIDE.md](docs/REVIEW_GUIDE.md) for the focused reviewer contract.
 Source and data attribution are recorded in [NOTICE.md](NOTICE.md).
 
+## License and redistribution
+
+OddQ source code and original documentation are licensed under
+[GPL-3.0-only](LICENSE). CatsEyeXI may package and redistribute OddQ under those
+same terms. Redistributors must include the license, preserve applicable notices,
+identify modifications, and provide corresponding OddQ source. This grant does
+not license Square Enix material, third-party wiki content, or CatsEyeXI-owned
+names and content; see [NOTICE.md](NOTICE.md) for the complete boundary.
+
 ## Release integrity
 
 The release archive contains the 13-file reachable MVP Lua runtime and its
@@ -88,4 +98,4 @@ evidence, backups, captures, and executables are excluded.
 - OddQ provides written guidance, not pathfinding or movement automation.
 - Unknown map pages use a visible `Map #1` presentation fallback until sourced
   page metadata is added.
-- v1.0.1 has syntax, contract, layout, packaging, and owner UI-review evidence.
+- v1.0.2 has syntax, contract, layout, packaging, and owner UI-review evidence.
