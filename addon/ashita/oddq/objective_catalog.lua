@@ -257,7 +257,7 @@ local function to_exp_entry(camp)
         first_step_kind = "exp_camp",
         first_zone_id = zone_id,
         first_target_name = "",
-        first_map_grid = "",
+        first_map_grid = safe_text(camp.map_grid),
         verification_status = "draft",
         steps = {
             {
@@ -265,7 +265,8 @@ local function to_exp_entry(camp)
                 step_kind = "exp_camp",
                 zone_id = zone_id,
                 npc_name = "",
-                map_grid = "",
+                map_grid = safe_text(camp.map_grid),
+                target_map_id = tonumber(camp.map_id),
                 position = position,
                 instruction = "",
                 required_items = {},
