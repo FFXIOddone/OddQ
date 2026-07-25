@@ -297,17 +297,25 @@ local function map_grid_label(source)
     if map_grid == "" then
         return ""
     end
-    if map_grid:match("[A-Za-z]+/[A-Za-z]+%-[0-9]+") then
-        return ""
-    end
     local tokens = {}
     local seen = {}
-    for token in map_grid:gmatch("[A-Za-z]+%-[0-9]+") do
-        token = token:upper()
-        if seen[token] ~= true then
+    local function add_token(token)
+        token = safe_text(token):upper()
+        if token ~= "" and seen[token] ~= true then
             seen[token] = true
             table.insert(tokens, token)
         end
+    end
+    for first, second, number in map_grid:gmatch("([A-Za-z]+)/([A-Za-z]+)%-([0-9]+)") do
+        add_token(first .. "-" .. number)
+        add_token(second .. "-" .. number)
+    end
+    for letter, first, second in map_grid:gmatch("([A-Za-z]+)%-([0-9]+)/([0-9]+)") do
+        add_token(letter .. "-" .. first)
+        add_token(letter .. "-" .. second)
+    end
+    for token in map_grid:gmatch("[A-Za-z]+%-[0-9]+") do
+        add_token(token)
     end
     if #tokens == 0 then
         return ""
@@ -352,13 +360,17 @@ local function step_location_line(step)
         local position = type(step.position) == "table" and step.position or {}
         local x = rounded_tenth(position.x)
         local y = rounded_tenth(position.y)
-        if x == nil or y == nil then
-            return nil
-        end
         local zone_id = tonumber(step.zone_id)
         local zone = zone_id ~= nil and safe_text(zone_names[zone_id]) or ""
         if zone == "" then
             zone = zone_display(zone_id)
+        end
+        if x == nil or y == nil then
+            local location = location_label(step, true)
+            if location == "" then
+                return nil
+            end
+            return "Guide marker: " .. zone .. " - " .. location
         end
         local map = target_map_label(step)
         if map == "" then
