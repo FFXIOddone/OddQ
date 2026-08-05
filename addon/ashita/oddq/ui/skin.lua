@@ -15,11 +15,19 @@ skin.colors = {
     scrollbar_grab_hovered = { 0.059, 0.541, 0.862, 0.68 },
     scrollbar_grab_active = { 0.098, 0.858, 1.000, 0.84 },
     text = { 0.933, 0.914, 0.863, 1.00 },
+    white = { 1.000, 1.000, 1.000, 1.00 },
     muted = { 0.700, 0.745, 0.745, 1.00 },
     line = { 0.933, 0.914, 0.863, 0.30 },
 }
 
 skin.layout = {
+    step_pointer = {
+        width = 300.0,
+        height = 146.0,
+        text_right_inset = 14.0,
+        text_size_reduction = 2.0,
+        fallback_text_size = 16.0,
+    },
     guide_notes = {
         width = 585.0,
         height = 230.0,
@@ -96,13 +104,13 @@ skin.layout = {
         nav_button_gap = 0.0,
         control_gap = 0.0,
         guide_browser = {
-            results_width = 420.0,
-            preview_width = 340.0,
+            results_width = 764.0,
+            preview_width = 32.0,
             height = 420.0,
             column_gap = 8.0,
             category_gap = 6.0,
             search_width = -1.0,
-            limit = 8.0,
+            limit = 7.0,
         },
     },
     window = {

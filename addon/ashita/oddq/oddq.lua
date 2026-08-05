@@ -1,6 +1,6 @@
 addon.name = "oddq"
 addon.author = "Odd"
-addon.version = "1.0.2"
+addon.version = "1.0.3"
 addon.desc = "Local quest and mission guide browser."
 
 require("common")
@@ -10,6 +10,8 @@ local guidance_state = require("guidance_state")
 local main_window = require("ui/main_window")
 local objective_catalog = require("objective_catalog")
 local local_filesystem = require("local_filesystem")
+local player_state = require("player_state")
+local step_pointer = require("ui/step_pointer")
 
 local imgui_ok, imgui = pcall(require, "imgui")
 if not imgui_ok then
@@ -188,6 +190,7 @@ local function load_local_catalog_guide(entry)
 
     local steps = oddq.tracked_objective.steps
     oddq.guidance.guide_step_tab_index = type(steps) == "table" and #steps > 0 and 1 or 0
+    guidance_state.reset_step_transition(oddq.guidance)
     open_guide()
     print("odd guide loaded: " .. entry_label(entry))
     return true
@@ -277,6 +280,7 @@ local function move_guide_step(delta)
         return false
     end
     oddq.guidance.guide_step_tab_index = next_selected
+    guidance_state.reset_step_transition(oddq.guidance)
     return true
 end
 
@@ -318,6 +322,17 @@ local function print_help()
 end
 
 local function render_ui()
+    local live_context = player_state.current_live_context({})
+    local advanced, step_index = guidance_state.observe_step_zone_transition(
+        oddq.guidance,
+        current_guidance_objective(),
+        (live_context or {}).current_zone_id
+    )
+    if advanced then
+        local steps = (current_guidance_objective() or {}).steps or {}
+        print("OddQ advanced to step " .. tostring(step_index) .. " of " .. tostring(#steps) .. ".")
+    end
+
     if imgui == nil or oddq.visible ~= true then
         return
     end
@@ -325,6 +340,12 @@ local function render_ui()
     local objective = current_guidance_objective()
     main_window.render(imgui, oddq.guidance, objective, function(args)
         handle_command(args or {})
+    end)
+    step_pointer.render(imgui, objective, oddq.guidance, live_context, function(command)
+        if type(command) == "string" and command:match("^/uw [hs][pg] ") ~= nil then
+            local chat = AshitaCore ~= nil and AshitaCore.GetChatManager ~= nil and AshitaCore:GetChatManager() or nil
+            if chat ~= nil and chat.QueueCommand ~= nil then chat:QueueCommand(-1, command) end
+        end
     end)
 end
 

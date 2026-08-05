@@ -3,36 +3,28 @@
 Clean, helpful quest and mission guidance for CatsEyeXI.
 
 OddQ is a local Ashita v4 addon with a searchable Guide Browser and a focused
-Guide view. Both views use one shared browser/guide window that players can move
-and resize from 480x320 up to the content-bounded 820x560 maximum. The 1.0 MVP has
-no objective pointer, Settings popup, or player-state tracking.
+Guide view in one shared browser/guide window. A compact, always-visible Step Pointer uses
+the player's local zone, position, and heading to point at the selected step.
 
 ## Release status
 
-`v1.0.2` is the current stable patch release. It adds an explicit source license
-and CatsEyeXI redistribution note on top of the v1.0.1 EXP-camp improvements.
-The retired Guide Hub,
-objective pointer, Settings popup, developer tuner, map-pin panel, route bridge,
-pilot tools, and packet-driven progression are not part of the runtime or
-release package.
-
-The bundled catalog contains 445 guides:
-
-- 215 mission guides
-- 16 job-unlock guides
-- 185 quest guides
-- 29 EXP guides
+`v1.0.3` is the current stable patch release. It adds the Step Pointer, local
+HP/Survival Guide route selection, CatsEyeXI job-unlock guidance, expanded
+mission/EXP positions, and explicit Gate Guard starts for all three nation
+mission lines. The retired Settings popup, developer tuner, map-pin panel,
+route bridge, pilot tools, and packet-driven progression are not shipped.
 
 When source data establishes an objective's map number, OddQ displays it beside
 the map-grid position. A grid with no recorded map number temporarily displays
 as `Map #1`; this fallback is not written into source data. Ordinary mission,
-quest, and job steps do not expose raw XYZ coordinates.
-EXP guides intentionally show rounded X/Y guide markers with the map fallback;
-these are arrival or reset references, not verified pull locations.
+quest, and job steps do not expose raw XYZ coordinates in the main Guide window.
+The Step Pointer shows rounded XYZ for the current destination.
+EXP guides intentionally show rounded X/Y guide markers in the main Guide window; these are
+arrival or reset references, not verified pull locations.
 
 ## Install
 
-Download the v1.0.2 release archive and copy:
+Download the v1.0.3 release archive and copy:
 
 ```text
 Ashita/addons/oddq -> <Ashita>/addons/oddq
@@ -66,9 +58,12 @@ are sourced, or `Map #1 - (grid)` as the temporary missing-map fallback.
 
 ## Safety and privacy
 
-OddQ is local and guidance-only. It does not use networking, inspect player
-state, read chat, register packet handlers, move the player, target entities,
-send commands, trade, cast, attack, follow, or handle credentials.
+OddQ is local and guidance-only. It reads the player's zone, position, and
+heading for the pointer. When the player clicks **Warp** within interaction range
+of the selected HP or Survival Guide, OddQ sends only `/uw hp <alias>` or
+`/uw sg <alias>` to the installed Uberwarp addon. It does not use networking,
+read chat, register packet handlers, move the player, target entities, trade,
+cast, attack, follow, or handle credentials.
 
 Its only runtime write is a first-launch marker under
 `config/addons/oddq/first-launch-seen.txt`.
@@ -88,14 +83,15 @@ names and content; see [NOTICE.md](NOTICE.md) for the complete boundary.
 
 ## Release integrity
 
-The release archive contains the 13-file reachable MVP Lua runtime and its
+The release archive contains the 16-file reachable Lua runtime and its
 bundled data. `MANIFEST.json` lists every packaged file, while
 `SHA256SUMS.txt` provides independent checksums. Development tools, private
 evidence, backups, captures, and executables are excluded.
 
 ## Current limitations
 
-- OddQ provides written guidance, not pathfinding or movement automation.
+- OddQ selects guidance and teleport legs; it does not move the character.
 - Unknown map pages use a visible `Map #1` presentation fallback until sourced
   page metadata is added.
-- v1.0.2 has syntax, contract, layout, packaging, and owner UI-review evidence.
+- v1.0.3 has syntax, contract, layout, packaging, installed-hash, and owner
+  live-client evidence.

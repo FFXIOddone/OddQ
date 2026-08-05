@@ -12,7 +12,7 @@ local categories = {
     {
         id = "catseye",
         label = "Catseye Quests",
-        mode = "quests",
+        mode = "all",
         catalog_group = "catseye_custom_quests",
         empty_hint = "Imported Catseye-specific quest guides from BG-Wiki.",
     },
@@ -66,14 +66,6 @@ local function copy_args(args)
         copied[index] = tostring(value or "")
     end
     return copied
-end
-
-local function command_text(args)
-    local copied = copy_args(args)
-    if #copied == 0 then
-        return "/odd"
-    end
-    return "/odd " .. table.concat(copied, " ")
 end
 
 local function category_by_id(id)
@@ -221,14 +213,6 @@ local function first_location(entry)
     return ""
 end
 
-local function rounded_tenth(value)
-    local number = tonumber(value)
-    if number == nil then
-        return nil
-    end
-    return string.format("%.1f", math.floor((number * 10) + 0.5) / 10)
-end
-
 local function first_zone_name(entry)
     local step = first_step(entry)
     local zone_id = tonumber(step.zone_id or (entry or {}).first_zone_id)
@@ -236,22 +220,6 @@ local function first_zone_name(entry)
         return ""
     end
     return trim(zone_names[zone_id])
-end
-
-local function exp_marker(entry)
-    local step = first_step(entry)
-    local position = type(step.position) == "table" and step.position or {}
-    local x = rounded_tenth(position.x)
-    local y = rounded_tenth(position.y)
-    if x == nil or y == nil then
-        return ""
-    end
-    local map = first_map_label(entry)
-    if map == "" then
-        -- AGENT_MIN: reason=EXP source data has no map-page field; ceiling=presentation fallback only; upgrade=replace when sourced map metadata is added.
-        map = "Map #1"
-    end
-    return map .. " - X " .. x .. ", Y " .. y
 end
 
 local function guide_kind(entry)
@@ -275,35 +243,6 @@ local function guide_action(entry)
         return {}
     end
     return { "plan", mode, objective_id }
-end
-
-local function prerequisite_summary(entry)
-    local prerequisites = (entry or {}).prerequisites
-    if type(prerequisites) ~= "table" then
-        prerequisites = {}
-    end
-    local parts = {}
-    local level = level_label(entry)
-    if level ~= "" then
-        table.insert(parts, level)
-    end
-    local job_requirement = trim((entry or {}).job_requirement)
-    if job_requirement ~= "" then
-        table.insert(parts, "Job: " .. job_requirement)
-    end
-    local function append_list(label, values)
-        if type(values) == "table" and #values > 0 then
-            table.insert(parts, label .. ": " .. table.concat(values, ", "))
-        end
-    end
-    append_list("Fame", prerequisites.fame)
-    append_list("Quests", prerequisites.quests_completed)
-    append_list("Missions", prerequisites.missions_completed)
-    append_list("Transport", prerequisites.transport_unlocks)
-    if #parts == 0 then
-        return "None listed"
-    end
-    return table.concat(parts, "; ")
 end
 
 local function guide_meta(entry)
@@ -415,60 +354,6 @@ function guide_browser.model(state, limit)
     }
 end
 
-local function append_preview(lines, selected, prefix, include_command)
-    prefix = prefix or ""
-    if selected == nil then
-        table.insert(lines, prefix .. "Preview: none")
-        return
-    end
-    local entry = selected.entry or {}
-    if trim(entry.kind) == "exp_camp" then
-        local level = level_label(entry)
-        local category = trim(entry.category)
-        local zone = first_zone_name(entry)
-        local marker = exp_marker(entry)
-        local targets = trim(entry.exp_targets)
-        table.insert(lines, prefix .. "Guide: " .. selected.label)
-        if level ~= "" then
-            table.insert(lines, prefix .. "Level: " .. level)
-        end
-        if category ~= "" then
-            table.insert(lines, prefix .. "Style: " .. category)
-        end
-        if zone ~= "" then
-            table.insert(lines, prefix .. "Zone: " .. zone)
-        end
-        if marker ~= "" then
-            table.insert(lines, prefix .. "Guide marker: " .. marker)
-        end
-        if targets ~= "" then
-            table.insert(lines, prefix .. "Targets: " .. targets)
-        end
-        if include_command == true then
-            table.insert(lines, prefix .. "Open: " .. command_text(selected.args))
-        end
-        return
-    end
-    local target = first_target(entry)
-    local location = first_location(entry)
-    table.insert(lines, prefix .. "Guide: " .. selected.label)
-    table.insert(lines, prefix .. "Type: " .. guide_kind(entry))
-    table.insert(lines, prefix .. "Requirements: " .. prerequisite_summary(entry))
-    if target ~= "" then
-        table.insert(lines, prefix .. "Starts at: " .. target .. (location ~= "" and " - " .. location or ""))
-    end
-    local step_count = tonumber(entry.step_count) or (type(entry.steps) == "table" and #entry.steps or 0)
-    if step_count > 0 then
-        table.insert(lines, prefix .. "Length: " .. tostring(step_count) .. (step_count == 1 and " step" or " steps"))
-    end
-    if entry.repeatable == true then
-        table.insert(lines, prefix .. "Repeatable: Yes")
-    end
-    if include_command == true then
-        table.insert(lines, prefix .. "Open: " .. command_text(selected.args))
-    end
-end
-
 function guide_browser.render_state(state)
     local model = guide_browser.model(state, 8)
     local counts = objective_catalog.counts()
@@ -498,7 +383,6 @@ function guide_browser.render_state(state)
             table.insert(lines, tostring(index) .. ". [" .. kind .. "] " .. result.label .. suffix)
         end
     end
-    append_preview(lines, model.selected, nil, true)
     return table.concat(lines, "\n")
 end
 
@@ -515,15 +399,6 @@ local function muted_line(imgui, text)
     skin.text_colored(imgui, skin.colors.muted, text, "body")
 end
 
-local function title_line(imgui, text)
-    if imgui ~= nil and imgui.GetWindowWidth ~= nil then
-        local wrap = math.max(1.0, (tonumber(imgui.GetWindowWidth()) or 0.0) - 16.0)
-        skin.text_colored_wrapped_at(imgui, skin.colors.blue_highlight, text, wrap, "title")
-        return
-    end
-    skin.text_colored(imgui, skin.colors.blue_highlight, text, "title")
-end
-
 local function same_line(imgui, gap)
     if imgui == nil or imgui.SameLine == nil then
         return
@@ -536,6 +411,22 @@ local function same_line(imgui, gap)
     local ok = pcall(imgui.SameLine, 0.0, gap)
     if not ok then
         imgui.SameLine()
+    end
+end
+
+local function inset_cursor_x(imgui, inset)
+    if imgui == nil or imgui.GetCursorScreenPos == nil or imgui.SetCursorScreenPos == nil then
+        return
+    end
+    local x, y = imgui.GetCursorScreenPos()
+    if type(x) == "table" then
+        y = x[2]
+        x = x[1]
+    end
+    x = tonumber(x)
+    y = tonumber(y)
+    if x ~= nil and y ~= nil then
+        imgui.SetCursorScreenPos({ x + math.max(0.0, tonumber(inset) or 0.0), y })
     end
 end
 
@@ -605,7 +496,6 @@ local function render_category_row(imgui, state, model, layout)
         local active = category.id == model.category.id
         if skin.button(imgui, category.label .. "##oddq_browser_category_" .. category.id, active and "active" or "secondary") then
             state.guide_browser_category = category.id
-            state.guide_browser_query = ""
             state.guide_browser_page = 1
             state.guide_browser_selected_index = 1
         end
@@ -621,10 +511,16 @@ local function result_button_label(label, width)
     return label:sub(1, math.max(1, max_characters - 3)):gsub("%s+$", "") .. "..."
 end
 
-local function render_results_pane(imgui, state, model, layout)
-    local opened, child = begin_child(imgui, "oddq_guide_browser_results", { layout.results_width, layout.height })
+local function render_results_pane(imgui, state, model, on_command, layout)
+    skin.text_colored(imgui, skin.colors.blue_highlight, model.category.label, "section")
+    inset_cursor_x(imgui, layout.gutter_width)
+    local list_height = math.max(72.0, (tonumber(layout.height) or 420.0) - 78.0)
+    local opened, child = begin_child(
+        imgui,
+        "oddq_guide_browser_result_list",
+        { layout.results_width, list_height }
+    )
     if opened then
-        skin.text_colored(imgui, skin.colors.blue_highlight, model.category.label, "section")
         if #model.results == 0 then
             text_line(imgui, model.category.empty_hint or "No results.")
         end
@@ -644,48 +540,24 @@ local function render_results_pane(imgui, state, model, layout)
                 muted_line(imgui, result.meta)
             end
         end
-        if imgui.Separator ~= nil then
-            imgui.Separator()
-        end
-        text_line(imgui, "Page " .. tostring(model.page))
-        if skin.button(imgui, "Previous Page##oddq_browser_previous", model.has_previous and "secondary" or "disabled") then
-            state.guide_browser_page = model.page - 1
-            state.guide_browser_selected_index = 1
-        end
+    end
+    end_child(imgui, child)
+    text_line(imgui, "Page " .. tostring(model.page))
+    if skin.button(imgui, "Previous Page##oddq_browser_previous", model.has_previous and "secondary" or "disabled") then
+        state.guide_browser_page = model.page - 1
+        state.guide_browser_selected_index = 1
+    end
+    same_line(imgui, 6.0)
+    if skin.button(imgui, "Next Page##oddq_browser_more", model.has_next and "secondary" or "disabled") then
+        state.guide_browser_page = model.page + 1
+        state.guide_browser_selected_index = 1
+    end
+    if model.selected ~= nil then
         same_line(imgui, 6.0)
-        if skin.button(imgui, "Next Page##oddq_browser_more", model.has_next and "secondary" or "disabled") then
-            state.guide_browser_page = model.page + 1
-            state.guide_browser_selected_index = 1
+        if skin.button(imgui, "Open Guide##oddq_browser_load", "primary") then
+            dispatch(on_command, model.selected.args)
         end
     end
-    end_child(imgui, child)
-end
-
-local function render_preview_pane(imgui, model, on_command, layout)
-    local opened, child = begin_child(imgui, "oddq_guide_browser_preview", { layout.preview_width, layout.height })
-    if opened then
-        if model.selected == nil then
-            skin.text_colored(imgui, skin.colors.blue_highlight, "Choose a guide", "section")
-            text_line(imgui, "Select a result to see where it starts and what it requires.")
-        else
-            local preview_lines = {}
-            append_preview(preview_lines, model.selected)
-            for index, line in ipairs(preview_lines) do
-                if index == 1 then
-                    title_line(imgui, line:gsub("^Guide:%s*", ""))
-                else
-                    text_line(imgui, line)
-                end
-            end
-            if imgui.Separator ~= nil then
-                imgui.Separator()
-            end
-            if skin.button(imgui, "Open Guide##oddq_browser_load", "primary") then
-                dispatch(on_command, model.selected.args)
-            end
-        end
-    end
-    end_child(imgui, child)
 end
 
 function guide_browser.render(imgui, state, on_command)
@@ -705,23 +577,27 @@ function guide_browser.render(imgui, state, on_command)
         state.guide_browser_page = 1
         state.guide_browser_selected_index = 1
     end
-    local model = guide_browser.model(state, layout.limit or 8)
+    local result_limit = math.max(1, math.floor(tonumber(layout.limit) or 8))
+    if imgui ~= nil and imgui.GetWindowHeight ~= nil then
+        local window_height = tonumber(imgui.GetWindowHeight()) or 0.0
+        local compact_limit = math.max(1, math.floor((window_height - 240.0) / 48.0))
+        result_limit = math.min(result_limit, compact_limit)
+    end
+    local model = guide_browser.model(state, result_limit)
 
     local child_layout = {
         results_width = tonumber(layout.results_width) or 550.0,
-        preview_width = tonumber(layout.preview_width) or 430.0,
         height = tonumber(layout.height) or 420.0,
         category_gap = tonumber(layout.category_gap) or 6.0,
         column_gap = tonumber(layout.column_gap) or 4.0,
+        gutter_width = 0.0,
     }
     if imgui ~= nil and imgui.GetWindowWidth ~= nil then
         local window_width = tonumber(imgui.GetWindowWidth()) or 0.0
         local available_width = math.max(1.0, window_width - 16.0)
-        local requested_width = child_layout.results_width + child_layout.column_gap + child_layout.preview_width
-        if requested_width > available_width then
-            local pane_width = math.max(1.0, available_width - child_layout.column_gap)
-            child_layout.results_width = math.floor(pane_width * 0.62)
-            child_layout.preview_width = pane_width - child_layout.results_width
+        child_layout.gutter_width = available_width * 0.025
+        if child_layout.results_width > available_width then
+            child_layout.results_width = math.floor(available_width * 0.95)
         end
         child_layout.wrap_categories = window_width < 640.0
     end
@@ -735,9 +611,7 @@ function guide_browser.render(imgui, state, on_command)
     if imgui.Separator ~= nil then
         imgui.Separator()
     end
-    render_results_pane(imgui, state, model, child_layout)
-    same_line(imgui, child_layout.column_gap)
-    render_preview_pane(imgui, model, on_command, child_layout)
+    render_results_pane(imgui, state, model, on_command, child_layout)
 end
 
 return guide_browser

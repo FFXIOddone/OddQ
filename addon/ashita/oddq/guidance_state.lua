@@ -44,6 +44,49 @@ function guidance_state.new()
     }
 end
 
+function guidance_state.reset_step_transition(state)
+    if type(state) ~= "table" then
+        return
+    end
+    state._step_transition_key = nil
+    state._step_transition_zone_id = nil
+end
+
+function guidance_state.observe_step_zone_transition(state, objective, current_zone_id)
+    local steps = type(objective) == "table" and objective.steps or nil
+    local zone_id = math.floor(tonumber(current_zone_id) or 0)
+    if type(state) ~= "table" or type(steps) ~= "table" or #steps == 0 or zone_id <= 0 then
+        return false
+    end
+
+    local selected = math.floor(tonumber(state.guide_step_tab_index) or 1)
+    selected = math.max(1, math.min(selected, #steps))
+    local step = steps[selected] or {}
+    local objective_id = tostring(objective.objective_id or objective.id or objective.name or "")
+    local transition_key = objective_id .. "|" .. tostring(selected) .. "|" .. tostring(step.step_id or "")
+
+    if state._step_transition_key ~= transition_key then
+        state._step_transition_key = transition_key
+        state._step_transition_zone_id = zone_id
+        return false
+    end
+
+    local previous_zone_id = tonumber(state._step_transition_zone_id)
+    state._step_transition_zone_id = zone_id
+    local destination_zone_id = math.floor(tonumber(step.auto_advance_zone_id) or 0)
+    if destination_zone_id <= 0
+        or previous_zone_id == nil
+        or previous_zone_id == zone_id
+        or zone_id ~= destination_zone_id
+        or selected >= #steps then
+        return false
+    end
+
+    state.guide_step_tab_index = selected + 1
+    guidance_state.reset_step_transition(state)
+    return true, selected + 1
+end
+
 function guidance_state.mode_label(mode)
     return mode_labels[mode] or tostring(mode or "unknown")
 end

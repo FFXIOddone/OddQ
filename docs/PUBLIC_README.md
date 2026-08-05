@@ -7,16 +7,17 @@ OddQ is a local Ashita v4 addon with two focused views in one shared window:
 - **Browser** searches and filters the bundled guide catalog.
 - **Guide** shows the selected guide and its current step.
 
-The `OddQ` window is movable and resizable from 480x320 up to the
-content-bounded 820x560 maximum. v1.0.2 does not ship an objective pointer,
-Settings popup, Guide Hub, player tracking, developer tuner, map-pin panel, or
-addon-control helper.
+The `OddQ` main window is movable and content-bounded. A compact, always-visible
+Step Pointer reads the player's local zone, position, and heading and points at
+the selected guide step. There is no Settings popup, developer tuner, map-pin
+panel, bridge, backend, updater, or packet-driven progression system.
 
 ## Release status
 
-`v1.0.2` is the current stable public MVP patch release. It adds explicit
-GPL-3.0-only source and CatsEyeXI redistribution terms while preserving the
-v1.0.1 EXP-camp fixes.
+`v1.0.3` is the current stable public patch release. It adds the Step Pointer,
+local HP/Survival Guide route selection, expanded mission and EXP coordinates,
+CatsEyeXI-specific job unlocks, and explicit Gate Guard starts for all three
+nation mission lines.
 
 ## Install
 
@@ -59,18 +60,22 @@ Guides** returns to search without opening another window.
 - A source-backed map number and grid render as `Map N - (grid)`.
 - A known grid without a recorded map number temporarily renders as
   `Map #1 - (grid)`; the fallback is not written into source data.
-- Ordinary mission, quest, and job steps do not show raw XYZ coordinates.
-- EXP guides intentionally show rounded X/Y guide markers with `Map #1` when
+- Ordinary mission, quest, and job steps do not show raw XYZ coordinates in the
+  main Guide window; the Step Pointer shows rounded XYZ for its destination.
+- EXP guides intentionally use guide markers with `Map #1` when
   the map page is unrecorded; these markers are arrival or reset references,
   not verified pull locations.
-- The player advances the guide with **Next** or `/odd next`; OddQ does not
-  infer progression from player activity.
+- The player normally advances with **Next** or `/odd next`. Only steps with an
+  explicit destination-zone contract advance after that zone transition.
 
 ## Local-only safety and privacy
 
-The v1.0.2 addon makes no network requests and has no bridge, backend, updater,
-telemetry, packet handler, credential path, or player-state tracker. It does not
-read or upload chat and does not move, target, trade, cast, attack, or follow.
+The v1.0.3 addon makes no network requests and has no bridge, backend, updater,
+telemetry, packet handler, or credential path. It reads local zone, position,
+and heading for pointer guidance. A user-clicked **Warp** button can send only
+`/uw hp <alias>` or `/uw sg <alias>` while the player is within interaction
+range of the selected service point. OddQ does not read or upload chat and does
+not move, target, trade, cast, attack, or follow.
 
 Its only runtime write is the first-launch marker at
 `config/addons/oddq/first-launch-seen.txt`.
@@ -88,7 +93,7 @@ CatsEyeXI-owned material is not relicensed by OddQ; see `NOTICE.md`.
 
 ## Verification boundary
 
-v1.0.2 has source, syntax, test, layout-probe, and package checks. The
-release package contains exactly 13 runtime Lua/data files. Those checks do not
+v1.0.3 has source, syntax, test, layout-probe, package, and installed-hash
+checks. The release package contains exactly 16 runtime Lua/data files. Those checks do not
 prove live on-screen behavior. No automated interaction with a CatsEyeXI game
 window is part of the release evidence; the owner checks in-game UX manually.

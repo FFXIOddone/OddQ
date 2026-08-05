@@ -359,7 +359,8 @@ local function step_location_line(step)
     if safe_text((step or {}).step_kind) == "exp_camp" then
         local position = type(step.position) == "table" and step.position or {}
         local x = rounded_tenth(position.x)
-        local y = rounded_tenth(position.y)
+        -- Ashita uses Z for the map's second horizontal axis; present it as map Y.
+        local y = rounded_tenth(position.z)
         local zone_id = tonumber(step.zone_id)
         local zone = zone_id ~= nil and safe_text(zone_names[zone_id]) or ""
         if zone == "" then
@@ -370,14 +371,14 @@ local function step_location_line(step)
             if location == "" then
                 return nil
             end
-            return "Guide marker: " .. zone .. " - " .. location
+            return "Guide Marker: " .. zone .. " - " .. location
         end
         local map = target_map_label(step)
         if map == "" then
             -- AGENT_MIN: reason=EXP source data has no map-page field; ceiling=presentation fallback only; upgrade=replace when sourced map metadata is added.
             map = "Map #1"
         end
-        return "Guide marker: " .. zone .. " - " .. map .. " - X " .. x .. ", Y " .. y
+        return "Guide Marker: " .. zone .. " - " .. map .. " - X " .. x .. ", Y " .. y
     end
 
     local location = location_label(step, true)
@@ -778,6 +779,59 @@ local function detail_text(imgui, value, context, indent)
     skin.text_wrapped(imgui, value, "body")
 end
 
+local detail_same_line
+
+local function exp_detail_parts(line)
+    local text = safe_text(line):gsub("^%s*", ""):gsub("^%-%s*", "")
+    local label, value = text:match("^(Guide [Mm]arker):%s*(.*)$")
+    if label ~= nil then
+        return "Guide Marker", value, true
+    end
+    for _, candidate in ipairs({ "Travel", "Targets", "Safety" }) do
+        value = text:match("^" .. candidate .. ":%s*(.*)$")
+        if value ~= nil then
+            return candidate, value, false
+        end
+    end
+    return nil, nil, false
+end
+
+local function render_exp_detail_line(imgui, line, detailed, context)
+    local label, value, marker = exp_detail_parts(line)
+    if label == nil then
+        if detailed then
+            detail_text(imgui, line, context, detail_number("body_indent_x", 0.0))
+        else
+            skin.text_wrapped(imgui, line, "body")
+        end
+        return
+    end
+
+    if marker then
+        if imgui.NewLine ~= nil then
+            imgui.NewLine()
+        elseif imgui.Dummy ~= nil then
+            imgui.Dummy({ 1.0, 17.0 })
+        end
+    end
+    local indent = detail_number(marker and "body_indent_x" or "note_indent_x", 0.0)
+    if detailed then
+        detail_set_indent(imgui, context, indent)
+    end
+    local prefix = marker and "Guide Marker:" or ("- " .. label .. ":")
+    skin.text_colored(imgui, skin.colors.blue_highlight, prefix, marker and "section" or "body")
+    detail_same_line(imgui, 5.0)
+    local wrap_x = detailed and detail_wrap_x(imgui, indent) or nil
+    if wrap_x == nil and imgui.GetWindowWidth ~= nil then
+        wrap_x = math.max(0.0, (tonumber(imgui.GetWindowWidth()) or 0.0) - 16.0)
+    end
+    if wrap_x ~= nil then
+        skin.text_colored_wrapped_at(imgui, skin.colors.white, value, wrap_x, "body")
+    else
+        skin.text_colored(imgui, skin.colors.white, value, "body")
+    end
+end
+
 local function detail_section_header(imgui, label, context)
     detail_gap(imgui, detail_number("section_top_gap", 0.0))
     if imgui ~= nil and imgui.Separator ~= nil then
@@ -798,7 +852,7 @@ local function detail_button_size(height_key, width_key)
     return { width, height }
 end
 
-local function detail_same_line(imgui, gap)
+detail_same_line = function(imgui, gap)
     if imgui == nil or imgui.SameLine == nil then
         return
     end
@@ -962,8 +1016,9 @@ function route_window.render_state(state)
     end
 
     if #summary.step_lines > 0 then
-        local section = safe_text((state.objective or {}).objective_kind) == "exp_camp" and "Camp Guide:" or "Directions:"
-        table.insert(lines, section)
+        if safe_text((state.objective or {}).objective_kind) ~= "exp_camp" then
+            table.insert(lines, "Directions:")
+        end
         for _, line in ipairs(summary.step_lines) do
             table.insert(lines, line)
         end
@@ -1247,13 +1302,16 @@ function route_window.render(imgui, state, on_command)
     end
 
     if #summary.step_lines > 0 then
-        if safe_text((state.objective or {}).objective_kind) == "exp_camp" then
-            section_header(imgui, "Camp Guide")
-        else
+        local exp_camp = safe_text((state.objective or {}).objective_kind) == "exp_camp"
+        if not exp_camp then
             section_header(imgui, "Directions")
         end
         for _, line in ipairs(summary.step_lines) do
-            skin.text_wrapped(imgui, line, "body")
+            if exp_camp then
+                render_exp_detail_line(imgui, line, false, nil)
+            else
+                skin.text_wrapped(imgui, line, "body")
+            end
         end
     end
 
@@ -1287,13 +1345,16 @@ function route_window.render_detailed_information(imgui, state, on_command)
     end
     if #summary.step_lines > 0 then
         local context = detail_context(imgui)
-        if safe_text((state.objective or {}).objective_kind) == "exp_camp" then
-            detail_section_header(imgui, "Camp Guide", context)
-        else
+        local exp_camp = safe_text((state.objective or {}).objective_kind) == "exp_camp"
+        if not exp_camp then
             detail_section_header(imgui, "Directions", context)
         end
         for _, line in ipairs(summary.step_lines) do
-            detail_text(imgui, line, context, detail_number("body_indent_x", 0.0))
+            if exp_camp then
+                render_exp_detail_line(imgui, line, true, context)
+            else
+                detail_text(imgui, line, context, detail_number("body_indent_x", 0.0))
+            end
         end
     end
 end

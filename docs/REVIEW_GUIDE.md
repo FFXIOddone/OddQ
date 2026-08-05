@@ -1,10 +1,10 @@
-# OddQ v1.0.1 Review Guide
+# OddQ v1.0.3 Review Guide
 
 This is the shortest review path for the local-only OddQ MVP.
 
 ## What ships
 
-The release contains exactly 13 runtime Lua/data files under
+The release contains exactly 16 runtime Lua/data files under
 `Ashita/addons/oddq`:
 
 ```text
@@ -12,12 +12,15 @@ oddq.lua
 guidance_state.lua
 objective_catalog.lua
 local_filesystem.lua
+player_state.lua
+uberwarp_routes.lua
 ui/guide_browser.lua
 ui/imgui_text.lua
 ui/main_window.lua
 ui/route_window.lua
 ui/skin.lua
 ui/window_state.lua
+ui/step_pointer.lua
 data/objectives.lua
 data/exp_camps.lua
 data/zone_names.lua
@@ -28,21 +31,24 @@ data/zone_names.lua
 between Browser and Guide. `ui/route_window.lua` renders the current step and
 Previous/Next controls.
 
-There is no Pointer window, Settings popup, Guide Hub, player-state tracker,
-bridge, backend, service, helper executable, updater, or server component.
+There is no Settings popup, bridge, backend, service, helper executable,
+updater, packet reader, or server component.
 
 ## Runtime review
 
 Review these properties directly in the shipped Lua tree:
 
-1. There is no outgoing-command or packet-mutation API.
+1. The only outgoing command path is the guarded, user-clicked Uberwarp action:
+   `/uw hp <alias>` or `/uw sg <alias>` while in service-point range.
 2. No network client or endpoint is loaded by the addon.
-3. The D3D-present handler renders bundled local guide data; it does not inspect
-   player state or automate gameplay.
+3. The D3D-present handler renders bundled local guide data and reads only local
+   zone, position, and heading for the Step Pointer.
 4. A source-backed map number appears beside its grid. If only the grid is
    established, the UI temporarily displays `Map #1`; source data remains unset.
-5. The only local write is the first-launch marker.
-6. Closing `OddQ` leaves no second OddQ window or popup behind.
+5. Explicit zone-transition steps may advance only after their destination zone
+   is observed; distance alone never marks a step complete.
+6. The only local write is the first-launch marker.
+7. Closing the main `OddQ` window does not disable the always-visible Step Pointer.
 
 Useful source scans:
 
@@ -52,9 +58,10 @@ rg -n -i "socket|websocket|httpclient|localhost|127\.0\.0\.1" addon/ashita/oddq 
 rg -n "ODD_SECURITY_NOTE|ODD_FILE_WRITE" addon/ashita/oddq/oddq.lua
 ```
 
-The first two scans should return no executable runtime integration. Bundled
-guide records may contain `https://` source-attribution links; those strings are
-data, not network calls.
+The packet/network scan should return no executable runtime integration. The
+`QueueCommand` scan should find only the guarded Uberwarp callback in `oddq.lua`.
+Bundled guide records may contain `https://` source-attribution links; those
+strings are data, not network calls.
 
 ## Player-facing smoke checklist
 
@@ -72,12 +79,14 @@ Run this checklist manually in an approved environment:
 8. Load an EXP guide and confirm **Travel**, **Targets**, and **Safety** each appear exactly once.
    Confirm its browser row shows level, style, and zone
    without `1 steps` or `Starts at: EXP Parties` filler.
-9. Confirm no Pointer, Settings, or other OddQ window appears.
-10. Close the window and confirm no OddQ UI remains open.
+9. Confirm the Step Pointer remains visible, shows only the selected step, and
+   points to its current destination.
+10. Confirm **Warp** appears only within range of the selected HP/Survival Guide
+    and sends the displayed Uberwarp destination when clicked.
 
 ## Release artifact
 
-The release zip should contain the installable 13-file
+The release zip should contain the installable 16-file
 `Ashita/addons/oddq` tree plus release notes, a file manifest, and
 `SHA256SUMS.txt`. It should not contain development caches, private paths,
 captures, credentials, executables, or unrelated projects.
@@ -89,12 +98,12 @@ alongside the addon.
 ## Evidence boundary
 
 Offline tests and layout probes establish source and package contracts. They do
-not establish live-client UX. v1.0.1 makes no automated CatsEyeXI-window test
+not establish live-client UX. v1.0.3 makes no automated CatsEyeXI-window test
 claim; the player-facing checklist above remains a manual review step.
 
 ## Known limitations
 
-- OddQ provides written guidance, not pathfinding or movement automation.
+- OddQ selects pointer and teleport guidance; it does not move the character.
 - Some steps have no source-backed map number and temporarily display `Map #1`.
 - Guide correctness and server-specific route quality should be reported and
   improved incrementally after release.

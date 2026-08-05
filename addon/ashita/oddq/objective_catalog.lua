@@ -157,6 +157,17 @@ local function copy_position(position)
     return { x = x, y = y, z = z }
 end
 
+local function copy_positions(positions)
+    local rows = {}
+    for _, position in ipairs(type(positions) == "table" and positions or {}) do
+        local copied = copy_position(position)
+        if copied ~= nil then
+            table.insert(rows, copied)
+        end
+    end
+    return rows
+end
+
 local function copy_prerequisites(entry)
     entry = entry or {}
     local source = entry.prerequisites
@@ -401,9 +412,12 @@ local function copy_steps(entry)
                 target_name = safe_text(step.target_name),
                 map_grid = safe_text(step.map_grid),
                 position = copy_position(step.position),
+                positions = copy_positions(step.positions),
                 target_map_id = tonumber(step.target_map_id),
                 target_map_label = safe_text(step.target_map_label),
                 arrival_radius = tonumber(step.arrival_radius),
+                pointer_suppressed = step.pointer_suppressed == true,
+                auto_advance_zone_id = tonumber(step.auto_advance_zone_id),
                 choices = copy_choices(step.choices),
                 instruction = safe_text(step.instruction),
                 required_items = copy_list(step.required_items),
@@ -1445,8 +1459,11 @@ local function contract_steps(steps)
             npc_name = step_target_name(step),
             map_grid = safe_text(step.map_grid),
             position = copy_position(step.position),
+            positions = copy_positions(step.positions),
             target_map_id = tonumber(step.target_map_id),
             target_map_label = safe_text(step.target_map_label),
+            pointer_suppressed = step.pointer_suppressed == true,
+            auto_advance_zone_id = tonumber(step.auto_advance_zone_id),
             instruction = safe_text(step.instruction),
             required_items = copy_list(step.required_items),
             required_key_items = copy_list(step.required_key_items),
