@@ -20,6 +20,29 @@ elevation-aware pointer distance, Heaven's Tower Transporter routing, fixed
 mapless targets, the Rank 10 milestone notice, and the latest mission-routing
 corrections from the playtest backlog.
 
+## In-game views
+
+### Active mission assistance
+
+The Browser and Step Pointer work together while the pointer offers the fastest
+available warp route.
+
+![OddQ active mission assistance with the Warp button available](docs/images/oddq-mission-guide-warp.png)
+
+### Guide display
+
+The focused Guide view keeps the current mission step, destination, progress,
+and navigation controls together while the Step Pointer remains visible.
+
+![OddQ mission Guide display with the Step Pointer](docs/images/oddq-guide-display.png)
+
+### Minimal obstruction
+
+Both OddQ windows collapse to their title bars when the player wants an
+unobstructed game view.
+
+![OddQ Guide and Step Pointer minimized to their title bars](docs/images/oddq-minimized-windows.png)
+
 ## Install
 
 Copy the release addon folder into Ashita:
@@ -119,5 +142,6 @@ CatsEyeXI-owned material is not relicensed by OddQ; see `NOTICE.md`.
 
 v1.0.5 has source, syntax, test, layout-probe, package, archive, and downloaded-
 asset checks. The release package contains exactly 24 runtime Lua/data files.
-No UI screenshot is included in the current release evidence. No automated
-interaction with a CatsEyeXI game window is part of this release.
+The screenshots above are direct in-game captures supplied by the product
+owner; they are README documentation and are not included in the release ZIP.
+No automated interaction with a CatsEyeXI game window is part of this release.
