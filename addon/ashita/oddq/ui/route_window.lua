@@ -37,7 +37,8 @@ local function runtime_state(state)
     state = type(state) == "table" and state or {}
     if objective_catalog == nil
         or type(objective_catalog.to_runtime_objective) ~= "function"
-        or type(state.objective) ~= "table" then
+        or type(state.objective) ~= "table"
+        or state.objective.has_route_modes == true then
         return state
     end
 
@@ -918,6 +919,47 @@ local function render_step_navigation(imgui, guidance, objective, selected, max_
             on_command({ "next" })
         end
     end
+    local step = type(objective.steps) == "table" and objective.steps[selected] or nil
+    local warp_action = guidance.warp_home_action
+    if type(step) == "table" and step.warp_home_recommended == true and type(warp_action) == "table" then
+        -- Leave one full navigation-button width between Next and this
+        -- optional destructive travel action.
+        detail_same_line(imgui, detail_number("nav_button_gap", 7.0) + detail_number("nav_button_width", 84.0))
+        if skin.button(
+            imgui,
+            safe_text(warp_action.label) .. "##oddq_guide_warp_home",
+            "secondary",
+            detail_button_size("nav_button_height", "nav_button_width")
+        ) and type(on_command) == "function" then
+            on_command({ "warp-home" })
+        end
+    end
+    detail_gap(imgui, detail_number("nav_bottom_gap", 4.0))
+end
+
+local function render_route_mode_selector(imgui, guidance, objective, on_command)
+    if type(objective) ~= "table" or objective.has_route_modes ~= true or imgui.Button == nil then
+        return
+    end
+
+    local selected_mode = safe_text(objective.selected_route_mode)
+    if skin.button(
+        imgui,
+        "Warp##oddq_route_mode_warp",
+        selected_mode == "WARP" and "primary" or "secondary",
+        detail_button_size("nav_button_height", "nav_button_width")
+    ) and type(on_command) == "function" then
+        on_command({ "route-mode", "WARP" })
+    end
+    detail_same_line(imgui, detail_number("nav_button_gap", 7.0))
+    if skin.button(
+        imgui,
+        "No SG/HP##oddq_route_mode_no_warp",
+        selected_mode == "NO_WARP" and "primary" or "secondary",
+        detail_button_size("nav_button_height", "nav_mission_button_width")
+    ) and type(on_command) == "function" then
+        on_command({ "route-mode", "NO_WARP" })
+    end
     detail_gap(imgui, detail_number("nav_bottom_gap", 4.0))
 end
 
@@ -935,6 +977,7 @@ local function render_step_guide(imgui, state, summary, known, on_command)
 
     detail_gap(imgui, detail_number("padding_y", 0.0))
     detail_gap(imgui, detail_number("content_top_gap", 0.0))
+    render_route_mode_selector(imgui, guidance, objective, on_command)
     render_guide_step(imgui, objective, selected, max_index, known, context)
     render_step_navigation(imgui, guidance, objective, selected, max_index, on_command)
     detail_gap(imgui, detail_number("content_bottom_gap", 0.0))
@@ -983,6 +1026,8 @@ local function objective_step_lines(objective, known)
     return lines
 end
 
+local is_placeholder_objective
+
 local function build_summary(state)
     local objective = state.objective
     local known = known_requirement_state(state)
@@ -1022,6 +1067,8 @@ function route_window.render_state(state)
         for _, line in ipairs(summary.step_lines) do
             table.insert(lines, line)
         end
+    elseif not is_placeholder_objective(state.objective) then
+        table.insert(lines, "Catalog entry only: route guide not yet curated.")
     end
     return table.concat(lines, "\n")
 end
@@ -1175,7 +1222,7 @@ local function cluster_instruction_line(summary, selected, objective)
     return line
 end
 
-local function is_placeholder_objective(objective)
+is_placeholder_objective = function(objective)
     if type(objective) ~= "table" then
         return true
     end
@@ -1223,6 +1270,9 @@ local function render_objective_cluster(imgui, state, summary, on_command)
         title = "No guide loaded"
         subtitle = "Use the Guide Browser or /odd find <text>."
         instruction = "Load a mission, quest, job, or EXP guide to show steps here."
+    elseif step_count == 0 then
+        subtitle = "Catalog entry only"
+        instruction = "This quest is searchable; its route guide has not been curated yet."
     end
     if subtitle == "" then
         subtitle = summary.checkpoint:gsub("^Next checkpoint: ", "")

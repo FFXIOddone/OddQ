@@ -4,10 +4,16 @@ local imgui_text = require("ui/imgui_text")
 local skin = require("ui/skin")
 local window_state = require("ui/window_state")
 local uberwarp_routes = require("uberwarp_routes")
+local mount_zones = require("data/mount_zones")
 
 local PI = math.pi
 local TWO_PI = PI * 2
 local WARP_USE_RANGE_YALMS = 6.0
+local DEFAULT_MOUNT_NAME = "Raptor"
+-- The fixed 300px pointer leaves about 190px after the arrow, spacing,
+-- padding, and right inset. At the scaled 14px font, 27 characters is the
+-- conservative single-line label budget.
+local POSITION_LABEL_CHARACTER_LIMIT = 27
 
 local ROUTE_ABBREVIATIONS = {
     { "Northern San d'Oria", "N. Sandy" },
@@ -27,6 +33,7 @@ local ROUTE_ABBREVIATIONS = {
     { "Western Adoulin", "W. Adoulin" },
     { "Eastern Adoulin", "E. Adoulin" },
     { "Aht Urhgan Whitegate", "Whitegate" },
+    { "Tavnazian Safehold", "Tav" },
 }
 
 local function compact_grid_label(step)
@@ -48,10 +55,46 @@ local function compact_grid_label(step)
     return ""
 end
 
+local function shorten_to_limit(value, limit)
+    value = tostring(value or "")
+    if #value <= limit then return value end
+    if limit <= 3 then return value:sub(1, limit) end
+    return value:sub(1, limit - 3) .. "..."
+end
+
+local function abbreviated_npc_name(name, available)
+    name = tostring(name or "")
+    if #name <= available then return name end
+    local first, last = name:match("^(.*%S)%s+(%S+)$")
+    if first ~= nil and last ~= nil then
+        name = first .. " " .. last:sub(1, 1) .. "."
+    end
+    return shorten_to_limit(name, available)
+end
+
+local OBJECT_PREFIX_ABBREVIATIONS = {
+    ["Door:"] = "Dr:",
+    ["Gate:"] = "Gt:",
+    ["Entrance:"] = "Ent:",
+}
+
+local function abbreviated_object_name(name, available)
+    local words = {}
+    for word in tostring(name or ""):gmatch("%S+") do words[#words + 1] = word end
+    if #table.concat(words, " ") <= available then return table.concat(words, " ") end
+    for index = 1, math.max(1, #words - 1) do
+        words[index] = OBJECT_PREFIX_ABBREVIATIONS[words[index]]
+            or (words[index]:sub(1, 1) .. ".")
+        local compact = table.concat(words, " ")
+        if #compact <= available then return compact end
+    end
+    return shorten_to_limit(table.concat(words, " "), available)
+end
+
 local function compact_position_label(step, target)
-    local grid = compact_grid_label(step)
-    if grid ~= "" then
-        return grid
+    local grid = compact_grid_label(target)
+    if grid == "" then
+        grid = compact_grid_label(step)
     end
     local function rounded(value)
         value = tonumber(value) or 0
@@ -60,12 +103,38 @@ local function compact_position_label(step, target)
         end
         return math.floor(value + 0.5)
     end
-    return string.format(
-        "X(%d) Y(%d) Z(%d)",
+    local position = grid
+    if position == "" then
+        position = string.format(
+            "X(%d) Y(%d) Z(%d)",
+            rounded(target.x),
+            rounded(target.y),
+            rounded(target.z)
+        )
+    end
+    local named_position = grid ~= "" and grid or string.format(
+        "(%d,%d,%d)",
         rounded(target.x),
         rounded(target.y),
         rounded(target.z)
     )
+    local npc_name = tostring((target or {}).npc_name or "")
+    local object_name = tostring((target or {}).object_name or "")
+    local general_anchor = tostring((target or {}).position_kind or "") == "map_grid_anchor"
+    if not general_anchor and npc_name == "" then
+        npc_name = tostring((step or {}).npc_name or "")
+    end
+    if not general_anchor and object_name == "" then
+        object_name = tostring((step or {}).object_name or "")
+    end
+    local name = ""
+    if npc_name ~= "" then
+        name = abbreviated_npc_name(npc_name, POSITION_LABEL_CHARACTER_LIMIT - #named_position - 1)
+    elseif object_name ~= "" then
+        name = abbreviated_object_name(object_name, POSITION_LABEL_CHARACTER_LIMIT - #named_position - 1)
+    end
+    if name == "" then return position end
+    return shorten_to_limit(name .. " " .. named_position, POSITION_LABEL_CHARACTER_LIMIT)
 end
 
 local function compact_route_label(label)
@@ -89,7 +158,16 @@ local function copy_position(position)
     if x == nil or z == nil then
         return nil
     end
-    return { x = x, y = y or 0, z = z }
+    return {
+        x = x,
+        y = y or 0,
+        z = z,
+        map_id = tonumber(position.map_id or position.target_map_id),
+        map_grid = tostring(position.map_grid or ""),
+        position_kind = tostring(position.position_kind or ""),
+        npc_name = tostring(position.npc_name or ""),
+        object_name = tostring(position.object_name or ""),
+    }
 end
 
 local function selected_step_index(objective, guidance)
@@ -118,14 +196,40 @@ local function step_positions(step)
     return positions
 end
 
+local function has_authored_warp_stage(step)
+    return type((step or {}).warp_stages) == "table" and #step.warp_stages > 0
+end
+
 local function next_destination(objective, guidance)
     local steps, selected = selected_step_index(objective, guidance)
     if steps == nil then return nil end
     if (steps[selected] or {}).pointer_suppressed == true then
         return nil, nil, selected, nil, "step_pointer_suppressed"
     end
-    for index = selected, #steps do
-        local positions = step_positions(steps[index])
+    local positions = step_positions(steps[selected])
+    if #positions > 0 then return steps[selected], selected, selected, positions end
+
+    local selected_zone = tonumber((steps[selected] or {}).zone_id)
+    if selected_zone ~= nil and selected_zone > 0 then
+        for index = selected - 1, 1, -1 do
+            if tonumber((steps[index] or {}).zone_id) == selected_zone then
+                positions = step_positions(steps[index])
+                if #positions > 0 then return steps[index], index, selected, positions end
+            end
+        end
+        for index = selected + 1, #steps do
+            if tonumber((steps[index] or {}).zone_id) == selected_zone then
+                positions = step_positions(steps[index])
+                if #positions > 0 then return steps[index], index, selected, positions end
+            end
+        end
+    end
+    for index = selected - 1, 1, -1 do
+        positions = step_positions(steps[index])
+        if #positions > 0 then return steps[index], index, selected, positions end
+    end
+    for index = selected + 1, #steps do
+        positions = step_positions(steps[index])
         if #positions > 0 then return steps[index], index, selected, positions end
     end
     return nil, nil, selected, nil
@@ -162,6 +266,29 @@ local function arrow_vector(current, target, heading)
     }, distance
 end
 
+function step_pointer.mount_action(live_context, mount_name)
+    local live = type(live_context) == "table" and live_context or {}
+    if live.is_mounted == true then
+        return {
+            label = "Dismount",
+            command = "/dismount",
+            variant = "secondary",
+        }
+    end
+    if live.is_mounted ~= false or not mount_zones.contains(live.current_zone_id) then
+        return nil
+    end
+    mount_name = tostring(mount_name or DEFAULT_MOUNT_NAME)
+    if mount_name == "" then
+        return nil
+    end
+    return {
+        label = "Mount",
+        command = string.format('/mount "%s"', mount_name),
+        variant = "primary",
+    }
+end
+
 function step_pointer.build(objective, guidance, live_context)
     local step, index, selected_index, candidates, unavailable_reason = next_destination(objective, guidance)
     if step == nil then
@@ -171,6 +298,17 @@ function step_pointer.build(objective, guidance, live_context)
     local live = type(live_context) == "table" and live_context or {}
     local target_zone = tonumber((step or {}).zone_id)
     local current_zone = tonumber(live.current_zone_id)
+    local preferred_warp_zone = tonumber((step or {}).preferred_warp_zone_id)
+    local preferred_warp_position = copy_position((step or {}).preferred_warp_position)
+    local using_warp_approach = target_zone ~= nil
+        and current_zone ~= nil
+        and target_zone ~= current_zone
+        and preferred_warp_zone ~= nil
+        and preferred_warp_position ~= nil
+    local target_map = tonumber((step or {}).target_map_id)
+    local current_map = tonumber(live.current_map_id or live.map_id or live.map_index or live.map_page)
+    local warp_suppressed = (step or {}).warp_suppressed == true
+        or tostring((step or {}).route_mode or ""):upper() == "NO_WARP"
     if live.current_position_available == false then
         return { available = false, reason = "live_position_unavailable" }
     end
@@ -180,43 +318,113 @@ function step_pointer.build(objective, guidance, live_context)
     if current == nil or heading == nil then
         return { available = false, reason = "live_direction_unavailable" }
     end
+    if target_zone ~= nil
+        and current_zone ~= nil
+        and target_zone == current_zone
+        and target_map ~= nil
+        and current_map ~= nil
+        and target_map ~= current_map then
+        return {
+            available = false,
+            reason = "target_map_mismatch",
+            target_map_label = tostring((step or {}).target_map_label or ("Map " .. tostring(target_map))),
+        }
+    end
+
+    local map_filtered = {}
+    local has_map_specific_candidates = false
+    for _, candidate in ipairs(candidates) do
+        if candidate.map_id ~= nil then
+            has_map_specific_candidates = true
+        end
+        if candidate.map_id == nil or current_map == nil or candidate.map_id == current_map then
+            map_filtered[#map_filtered + 1] = candidate
+        end
+    end
+    if has_map_specific_candidates and current_map ~= nil and #map_filtered == 0 then
+        local labels = {}
+        for _, option in ipairs((step or {}).target_map_options or {}) do
+            labels[#labels + 1] = tostring(option.map_label or ("Map " .. tostring(option.map_id)))
+        end
+        return {
+            available = false,
+            reason = "target_map_mismatch",
+            target_map_label = table.concat(labels, " / "),
+        }
+    end
+    candidates = map_filtered
 
     local target, warp, best_cost = nil, nil, nil
     for _, candidate in ipairs(candidates) do
-        local dx, dz = candidate.x - current.x, candidate.z - current.z
+        local route_candidate = using_warp_approach and preferred_warp_position or candidate
+        local route_target_zone = using_warp_approach and preferred_warp_zone or target_zone
+        local dx, dz = route_candidate.x - current.x, route_candidate.z - current.z
         local walking_cost = math.sqrt((dx * dx) + (dz * dz))
         local candidate_warp = nil
         local cost = walking_cost
-        if target_zone ~= nil and current_zone ~= nil then
-            local planned_warp = uberwarp_routes.plan(current_zone, current, target_zone, candidate)
-            if target_zone ~= current_zone then
-                candidate_warp = planned_warp
-                cost = planned_warp and planned_warp.cost or nil
-            elseif planned_warp ~= nil and planned_warp.cost < walking_cost then
-                candidate_warp = planned_warp
-                cost = planned_warp.cost
+        if not warp_suppressed and has_authored_warp_stage(step) then
+            local planned_warp = uberwarp_routes.plan_stage
+                and uberwarp_routes.plan_stage(current_zone, current, step.warp_stages)
+                or nil
+            candidate_warp = planned_warp
+            cost = planned_warp and planned_warp.cost or nil
+        elseif route_target_zone ~= nil and current_zone ~= nil and not warp_suppressed then
+            if using_warp_approach and route_target_zone == current_zone then
+                cost = walking_cost
+            else
+                local planned_warp = uberwarp_routes.plan(
+                    current_zone,
+                    current,
+                    route_target_zone,
+                    route_candidate,
+                    nil,
+                    step.preferred_warp_destination_alias
+                )
+                if route_target_zone ~= current_zone then
+                    candidate_warp = planned_warp
+                    cost = planned_warp and planned_warp.cost or nil
+                elseif planned_warp ~= nil and planned_warp.cost < walking_cost then
+                    candidate_warp = planned_warp
+                    cost = planned_warp.cost
+                end
             end
+        elseif route_target_zone ~= nil and current_zone ~= nil and route_target_zone ~= current_zone then
+            cost = nil
         end
         if cost ~= nil and (best_cost == nil or cost < best_cost) then
-            best_cost, target, warp = cost, candidate, candidate_warp
+            best_cost, target, warp = cost, route_candidate, candidate_warp
         end
     end
-    if target == nil then return { available = false, reason = "no_uberwarp_route" } end
+    if target == nil then
+        if target_zone ~= nil and current_zone ~= nil and target_zone ~= current_zone then
+            return {
+                available = false,
+                reason = "loading_next_zone",
+                target_zone_id = target_zone,
+            }
+        end
+        return { available = false, reason = "route_data_unavailable" }
+    end
     if warp ~= nil then target = warp.source.position end
     local vector, distance = arrow_vector(current, target, heading)
     return {
         available = true,
         step_index = index,
         selected_step_index = selected_index,
-        uses_forward_step = index ~= selected_index,
+        uses_forward_step = index > selected_index,
+        uses_backward_step = index < selected_index,
         step_id = tostring((step or {}).step_id or ""),
         target = target,
-        target_zone_id = target_zone,
+        target_zone_id = using_warp_approach and preferred_warp_zone or target_zone,
         current = current,
         distance = distance,
         distance_label = string.format("%.1fy", distance),
-        position_kind = tostring((step or {}).position_kind or "exact_target"),
-        position_label = compact_position_label(warp == nil and step or nil, target),
+        position_kind = tostring(target.position_kind ~= "" and target.position_kind or (step or {}).position_kind or "exact_target"),
+        position_label = compact_position_label(
+            warp == nil and not using_warp_approach and step or nil,
+            target
+        ),
+        position_label_character_limit = POSITION_LABEL_CHARACTER_LIMIT,
         pointer_vector = vector,
         warp_command = warp and warp.command or nil,
         source_label = warp and warp.source_label or nil,
@@ -278,11 +486,28 @@ local function pointer_text(imgui, color, value, wrap_position)
     imgui_text.colored(imgui, color, value)
 end
 
-function step_pointer.render(imgui, objective, guidance, live_context, on_warp)
+local function render_mount_action(imgui, action, on_action, width)
+    if type(action) ~= "table" then
+        return false
+    end
+    local id = action.label == "Dismount"
+        and "Dismount##oddq_step_pointer_dismount"
+        or "Mount##oddq_step_pointer_mount"
+    if skin.button(imgui, id, action.variant or "secondary", { width or 72.0, 0.0 }) then
+        if type(on_action) == "function" then
+            on_action(action.command)
+        end
+        return true
+    end
+    return false
+end
+
+function step_pointer.render(imgui, objective, guidance, live_context, on_action)
     if imgui == nil or imgui.Begin == nil or imgui.End == nil then
         return
     end
     local cue = step_pointer.build(objective, guidance, live_context)
+    local mount_action = step_pointer.mount_action(live_context)
 
     local flags = (tonumber(ImGuiWindowFlags_NoResize) or 0)
         + (tonumber(ImGuiWindowFlags_NoScrollbar) or 0)
@@ -309,14 +534,18 @@ function step_pointer.render(imgui, objective, guidance, live_context, on_warp)
         if cue.available == true then
             if imgui.BeginGroup ~= nil then imgui.BeginGroup() end
             draw_arrow(imgui, cue)
+            local paired_actions = cue.warp_available and mount_action ~= nil
+            local action_width = paired_actions and 36.0 or 72.0
             if cue.warp_available and skin.button(
                 imgui,
                 "Warp##oddq_step_pointer_warp",
                 "primary",
-                { 72.0, 0.0 }
+                { action_width, 0.0 }
             ) then
-                if type(on_warp) == "function" then on_warp(cue.warp_command) end
+                if type(on_action) == "function" then on_action(cue.warp_command) end
             end
+            if paired_actions and imgui.SameLine ~= nil then imgui.SameLine(0.0, 0.0) end
+            render_mount_action(imgui, mount_action, on_action, action_width)
             if imgui.EndGroup ~= nil then imgui.EndGroup() end
             if imgui.SameLine ~= nil then imgui.SameLine() end
             if imgui.BeginGroup ~= nil then imgui.BeginGroup() end
@@ -337,16 +566,22 @@ function step_pointer.render(imgui, objective, guidance, live_context, on_warp)
                 step_pointer_suppressed = "Follow the only exit.",
                 live_position_unavailable = "Waiting for POS.",
                 live_direction_unavailable = "Waiting for heading.",
-                no_uberwarp_route = "No HP/SG route.",
+                loading_next_zone = "Loading next zone.",
+                route_data_unavailable = "Route data unavailable.",
             }
+            local message = messages[cue.reason] or "Open a guide with POS."
+            if cue.reason == "target_map_mismatch" then
+                message = "Reach " .. tostring(cue.target_map_label or "the target map") .. " first."
+            end
             local wrap_position = width - (tonumber(layout.text_right_inset) or 14.0)
             pointer_text(imgui, skin.colors.blue_highlight, "OddQ Pointer", wrap_position)
             pointer_text(
                 imgui,
                 skin.colors.text,
-                messages[cue.reason] or "Open a guide with POS.",
+                message,
                 wrap_position
             )
+            render_mount_action(imgui, mount_action, on_action)
         end
     end
     if font_scaled then

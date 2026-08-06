@@ -10,6 +10,11 @@ if not loaded_exp_camps or type(exp_camp_rows) ~= "table" then
     exp_camp_rows = {}
 end
 
+local loaded_npc_finder, npc_finder_rows = pcall(require, "data/npc_finder")
+if not loaded_npc_finder or type(npc_finder_rows) ~= "table" then
+    npc_finder_rows = {}
+end
+
 local catalog_rows = {}
 local runtime_objective_cache = setmetatable({}, { __mode = "k" })
 
@@ -18,6 +23,7 @@ local mode_for_kind = {
     job_unlock = "jobs",
     quest = "quests",
     exp_camp = "exp",
+    npc_service = "npcs",
 }
 
 local short_kind = {
@@ -25,6 +31,7 @@ local short_kind = {
     job_unlock = "job",
     quest = "quest",
     exp_camp = "exp",
+    npc_service = "npc",
 }
 
 local advanced_job_aliases = {
@@ -84,6 +91,9 @@ local function normalize_mode(mode)
     end
     if text == "exp_camp" or text == "camp" or text == "camps" then
         return "exp"
+    end
+    if text == "npc" or text == "npc_finder" or text == "finder" then
+        return "npcs"
     end
     return text
 end
@@ -154,7 +164,16 @@ local function copy_position(position)
     if x == nil or y == nil or z == nil then
         return nil
     end
-    return { x = x, y = y, z = z }
+    return {
+        x = x,
+        y = y,
+        z = z,
+        map_id = tonumber(position.map_id or position.target_map_id),
+        map_grid = safe_text(position.map_grid),
+        position_kind = safe_text(position.position_kind),
+        npc_name = safe_text(position.npc_name),
+        object_name = safe_text(position.object_name),
+    }
 end
 
 local function copy_positions(positions)
@@ -163,6 +182,51 @@ local function copy_positions(positions)
         local copied = copy_position(position)
         if copied ~= nil then
             table.insert(rows, copied)
+        end
+    end
+    return rows
+end
+
+local function copy_target_map_options(options)
+    local rows = {}
+    for _, option in ipairs(type(options) == "table" and options or {}) do
+        local map_id = tonumber(type(option) == "table" and option.map_id or nil)
+        if map_id ~= nil then
+            table.insert(rows, {
+                map_id = map_id,
+                map_label = safe_text(option.map_label),
+            })
+        end
+    end
+    return rows
+end
+
+local function copy_warp_stages(stages)
+    local rows = {}
+    for _, stage in ipairs(type(stages) == "table" and stages or {}) do
+        if type(stage) == "table" then
+            table.insert(rows, {
+                zone_id = tonumber(stage.zone_id) or 0,
+                method = safe_text(stage.method),
+                source_alias = safe_text(stage.source_alias),
+                destination_alias = safe_text(stage.destination_alias),
+                destination_zone_id = tonumber(stage.destination_zone_id) or 0,
+            })
+        end
+    end
+    return rows
+end
+
+local function copy_auto_advance_events(events)
+    local rows = {}
+    for _, event in ipairs(type(events) == "table" and events or {}) do
+        if type(event) == "table" then
+            rows[#rows + 1] = {
+                event = safe_text(event.event),
+                name = safe_text(event.name),
+                event_id = tonumber(event.event_id),
+                zone_id = tonumber(event.zone_id),
+            }
         end
     end
     return rows
@@ -288,6 +352,68 @@ local function to_exp_entry(camp)
     }
 end
 
+local function copy_services(services)
+    local rows = {}
+    for _, service in ipairs(type(services) == "table" and services or {}) do
+        if type(service) == "table" then
+            table.insert(rows, {
+                kind = safe_text(service.kind),
+                name = safe_text(service.name),
+                detail = safe_text(service.detail),
+                objective_id = safe_text(service.objective_id),
+                search_terms = copy_list(service.search_terms),
+                item_id = tonumber(service.item_id) or 0,
+                price = tonumber(service.price) or 0,
+            })
+        end
+    end
+    return rows
+end
+
+local function to_npc_finder_entry(row)
+    row = type(row) == "table" and row or {}
+    local objective_id = safe_text(row.objective_id)
+    local npc_name = safe_text(row.name)
+    local zone_name = safe_text(row.zone_name)
+    local services = copy_services(row.services)
+    return {
+        id = safe_text(row.id),
+        objective_id = objective_id,
+        quest_id = objective_id,
+        kind = "npc_service",
+        name = npc_name,
+        zone_name = zone_name,
+        services = services,
+        service_count = tonumber(row.service_count) or #services,
+        display_priority = 0,
+        prerequisites = {
+            fame = {}, level_min = 0, level_max = 0,
+            missions_completed = {}, quests_completed = {}, transport_unlocks = {},
+        },
+        step_count = 1,
+        first_step_id = "reach_npc",
+        first_step_kind = "talk",
+        first_zone_id = tonumber(row.zone_id) or 0,
+        first_target_name = npc_name,
+        first_map_grid = safe_text(row.map_grid),
+        verification_status = safe_text(row.verification_status),
+        steps = {
+            {
+                step_id = "reach_npc",
+                step_kind = "talk",
+                zone_id = tonumber(row.zone_id) or 0,
+                npc_name = npc_name,
+                map_grid = safe_text(row.map_grid),
+                position = copy_position(row.position),
+                instruction = "Travel to " .. npc_name .. " in " .. zone_name .. " and speak with them.",
+                required_items = {},
+                required_key_items = {},
+                notes = { "NPC Finder entry with " .. tostring(#services) .. " source-backed services." },
+            },
+        },
+    }
+end
+
 local function build_catalog_rows()
     local rows = {}
     local seen = {}
@@ -302,6 +428,13 @@ local function build_catalog_rows()
         local objective_id = safe_text(camp.objective_id)
         if objective_id ~= "" and seen[objective_id] ~= true then
             table.insert(rows, to_exp_entry(camp))
+            seen[objective_id] = true
+        end
+    end
+    for _, finder_row in ipairs(npc_finder_rows) do
+        local objective_id = safe_text(finder_row.objective_id)
+        if objective_id ~= "" and seen[objective_id] ~= true then
+            table.insert(rows, to_npc_finder_entry(finder_row))
             seen[objective_id] = true
         end
     end
@@ -332,6 +465,34 @@ local function matches_catalog_group(entry, catalog_group)
         return true
     end
     return safe_text((entry or {}).catalog_group) == expected
+end
+
+local function matches_exp_categories(entry, category_keys)
+    if type(category_keys) ~= "table" or #category_keys == 0 then
+        return true
+    end
+    local actual = safe_text((entry or {}).category_key)
+    for _, expected in ipairs(category_keys) do
+        if actual == safe_text(expected) then
+            return true
+        end
+    end
+    return false
+end
+
+local function matches_expansions(entry, expansion_keys)
+    if type(expansion_keys) ~= "table" or #expansion_keys == 0 then
+        return true
+    end
+    local actual = type((entry or {}).expansions) == "table" and entry.expansions or {}
+    for _, wanted in ipairs(expansion_keys) do
+        for _, expansion in ipairs(actual) do
+            if safe_text(expansion) == safe_text(wanted) then
+                return true
+            end
+        end
+    end
+    return false
 end
 
 local function step_target_name(step)
@@ -371,6 +532,20 @@ local function steps_search_blob(entry)
                 table.insert(parts, key_item)
             end
         end
+    end
+    return table.concat(parts, " ")
+end
+
+local function services_search_blob(entry)
+    local parts = {}
+    for _, service in ipairs(type((entry or {}).services) == "table" and entry.services or {}) do
+        table.insert(parts, safe_text(service.kind))
+        table.insert(parts, safe_text(service.name))
+        table.insert(parts, safe_text(service.detail))
+        for _, term in ipairs(copy_list(service.search_terms)) do
+            table.insert(parts, term)
+        end
+        table.insert(parts, tostring(tonumber(service.item_id) or ""))
     end
     return table.concat(parts, " ")
 end
@@ -415,7 +590,17 @@ local function copy_steps(entry)
                 positions = copy_positions(step.positions),
                 target_map_id = tonumber(step.target_map_id),
                 target_map_label = safe_text(step.target_map_label),
+                target_map_options = copy_target_map_options(step.target_map_options),
                 arrival_radius = tonumber(step.arrival_radius),
+                route_mode = safe_text(step.route_mode),
+                route_group = safe_text(step.route_group),
+                warp_stages = copy_warp_stages(step.warp_stages),
+                warp_suppressed = step.warp_suppressed == true,
+                preferred_warp_destination_alias = safe_text(step.preferred_warp_destination_alias),
+                preferred_warp_zone_id = tonumber(step.preferred_warp_zone_id),
+                preferred_warp_position = copy_position(step.preferred_warp_position),
+                warp_home_recommended = step.warp_home_recommended == true,
+                auto_advance_events = copy_auto_advance_events(step.auto_advance_events),
                 pointer_suppressed = step.pointer_suppressed == true,
                 auto_advance_zone_id = tonumber(step.auto_advance_zone_id),
                 choices = copy_choices(step.choices),
@@ -444,6 +629,8 @@ local function search_blob(entry)
         safe_text(entry.category),
         safe_text(entry.category_key),
         safe_text(entry.catalog_group),
+        table.concat(type(entry.regions) == "table" and entry.regions or {}, " "),
+        table.concat(type(entry.expansions) == "table" and entry.expansions or {}, " "),
         safe_text(entry.job_requirement),
         safe_text(entry.level_range),
         safe_text(entry.first_target_name),
@@ -451,6 +638,7 @@ local function search_blob(entry)
         safe_text(entry.verification_status),
         prerequisite_detail_label(entry),
         steps_search_blob(entry),
+        services_search_blob(entry),
     }, " "):lower()
     search_blob_cache[entry] = blob
     return blob
@@ -1068,6 +1256,7 @@ function objective_catalog.counts()
         jobs = 0,
         quests = 0,
         exp = 0,
+        npcs = 0,
     }
     for _, entry in ipairs(catalog_rows) do
         local mode = mode_for_kind[safe_text(entry.kind)]
@@ -1079,12 +1268,15 @@ function objective_catalog.counts()
     return result
 end
 
-function objective_catalog.list(mode, limit, catalog_group)
+function objective_catalog.list(mode, limit, catalog_group, exp_category_keys, expansion_keys)
     local normalized = normalize_mode(mode)
     local max_count = tonumber(limit) or 12
     local results = {}
     for _, entry in ipairs(catalog_rows) do
-        if matches_mode(entry, normalized) and matches_catalog_group(entry, catalog_group) then
+        if matches_mode(entry, normalized)
+            and matches_catalog_group(entry, catalog_group)
+            and matches_exp_categories(entry, exp_category_keys)
+            and matches_expansions(entry, expansion_keys) then
             table.insert(results, entry)
         end
     end
@@ -1099,7 +1291,7 @@ function objective_catalog.list(mode, limit, catalog_group)
     return limited
 end
 
-function objective_catalog.search(query, mode, limit, catalog_group)
+function objective_catalog.search(query, mode, limit, catalog_group, exp_category_keys, expansion_keys)
     local text = safe_text(query):lower()
     local max_count = tonumber(limit) or 12
     local scored = {}
@@ -1110,9 +1302,15 @@ function objective_catalog.search(query, mode, limit, catalog_group)
         return {}
     end
     for _, entry in ipairs(catalog_rows) do
-        if matches_mode(entry, mode) and matches_catalog_group(entry, catalog_group) then
+        if matches_mode(entry, mode)
+            and matches_catalog_group(entry, catalog_group)
+            and matches_exp_categories(entry, exp_category_keys)
+            and matches_expansions(entry, expansion_keys) then
             local score = search_score(entry, text)
             if score ~= nil then
+                if safe_text(entry.kind) == "quest" and (tonumber(entry.step_count) or 0) == 0 then
+                    score = score + 100
+                end
                 table.insert(scored, {
                     score = score,
                     entry = entry,
@@ -1131,11 +1329,11 @@ function objective_catalog.search(query, mode, limit, catalog_group)
     return results
 end
 
-function objective_catalog.browse(mode, query, limit, catalog_group)
+function objective_catalog.browse(mode, query, limit, catalog_group, exp_category_keys, expansion_keys)
     if normalize_search_text(query) == "" then
-        return objective_catalog.list(mode, limit, catalog_group)
+        return objective_catalog.list(mode, limit, catalog_group, exp_category_keys, expansion_keys)
     end
-    return objective_catalog.search(query, mode, limit, catalog_group)
+    return objective_catalog.search(query, mode, limit, catalog_group, exp_category_keys, expansion_keys)
 end
 
 local function normalize_suggestion_filters(filters)
@@ -1462,6 +1660,16 @@ local function contract_steps(steps)
             positions = copy_positions(step.positions),
             target_map_id = tonumber(step.target_map_id),
             target_map_label = safe_text(step.target_map_label),
+            target_map_options = copy_target_map_options(step.target_map_options),
+            route_mode = safe_text(step.route_mode),
+            route_group = safe_text(step.route_group),
+            warp_stages = copy_warp_stages(step.warp_stages),
+            warp_suppressed = step.warp_suppressed == true,
+            preferred_warp_destination_alias = safe_text(step.preferred_warp_destination_alias),
+            preferred_warp_zone_id = tonumber(step.preferred_warp_zone_id),
+            preferred_warp_position = copy_position(step.preferred_warp_position),
+            warp_home_recommended = step.warp_home_recommended == true,
+            auto_advance_events = copy_auto_advance_events(step.auto_advance_events),
             pointer_suppressed = step.pointer_suppressed == true,
             auto_advance_zone_id = tonumber(step.auto_advance_zone_id),
             instruction = safe_text(step.instruction),

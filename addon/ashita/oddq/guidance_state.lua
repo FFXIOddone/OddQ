@@ -32,6 +32,7 @@ function guidance_state.new()
         guide_browser_query = "",
         guide_browser_page = 1,
         guide_browser_selected_index = 1,
+        route_mode = "WARP",
         exp_types = {
             solo_trusts = true,
             duo_trusts = true,
@@ -85,6 +86,20 @@ function guidance_state.observe_step_zone_transition(state, objective, current_z
     state.guide_step_tab_index = selected + 1
     guidance_state.reset_step_transition(state)
     return true, selected + 1
+end
+
+function guidance_state.advance_for_progress_events(state, objective, events, matcher)
+    local steps = type(objective) == "table" and objective.steps or nil
+    if type(state) ~= "table" or type(steps) ~= "table" or #steps == 0 or type(matcher) ~= "function" then
+        return false
+    end
+    local selected = math.max(1, math.min(math.floor(tonumber(state.guide_step_tab_index) or 1), #steps))
+    if selected >= #steps then return false end
+    local complete, evidence = matcher(steps[selected], events)
+    if complete ~= true then return false end
+    state.guide_step_tab_index = selected + 1
+    guidance_state.reset_step_transition(state)
+    return true, selected + 1, evidence
 end
 
 function guidance_state.mode_label(mode)

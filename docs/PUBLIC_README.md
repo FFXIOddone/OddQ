@@ -10,14 +10,20 @@ OddQ is a local Ashita v4 addon with two focused views in one shared window:
 The `OddQ` main window is movable and content-bounded. A compact, always-visible
 Step Pointer reads the player's local zone, position, and heading and points at
 the selected guide step. There is no Settings popup, developer tuner, map-pin
-panel, bridge, backend, updater, or packet-driven progression system.
+panel, bridge, backend, updater, or outgoing packet automation.
 
 ## Release status
 
-`v1.0.3` is the current stable public patch release. It adds the Step Pointer,
-local HP/Survival Guide route selection, expanded mission and EXP coordinates,
-CatsEyeXI-specific job unlocks, and explicit Gate Guard starts for all three
-nation mission lines.
+`v1.0.4` is the current stable public patch release. It adds persistent guide
+resume state, expansion quest collections, mode ownership labels, Warp Home,
+passive authored progression checks, and the broad nation-mission routing and
+pointer corrections from the latest playtest pass.
+
+## Current interface
+
+![OddQ Main window showing a loaded mission guide](images/oddq-main-window-v1.0.4.png)
+
+![OddQ Step Pointer with Warp active](images/oddq-pointer-warp-v1.0.4.png)
 
 ## Install
 
@@ -54,6 +60,15 @@ No executable, DLL, service, bridge, backend, or server change is required.
 
 Loading a guide replaces the Browser view in the same window. **Back to
 Guides** returns to search without opening another window.
+OddQ restores the last loaded guide, selected step, Warp/No-Warp choice, and
+window state after an addon reload or the next login.
+Quest, mission, and job search rows show `ACE / CW / WeW` ownership instead of
+map metadata. Supported modes are blue, unavailable modes are white, and the
+separators remain white.
+The bundled standard quest catalog includes every BG-Wiki-listed Windurst (92),
+San d'Oria (82), Bastok (94), and Jeuno (159) quest. Existing routed guides take
+priority; a title that is indexed but not routed is labeled **Catalog entry
+only** instead of presenting invented directions.
 
 ## Location behavior
 
@@ -65,20 +80,28 @@ Guides** returns to search without opening another window.
 - EXP guides intentionally use guide markers with `Map #1` when
   the map page is unrecorded; these markers are arrival or reset references,
   not verified pull locations.
-- The player normally advances with **Next** or `/odd next`. Only steps with an
-  explicit destination-zone contract advance after that zone transition.
+- The player normally advances with **Next** or `/odd next`. An authored step
+  may also advance from its declared zone, current-step item/key-item, or
+  cutscene evidence.
 
 ## Local-only safety and privacy
 
-The v1.0.3 addon makes no network requests and has no bridge, backend, updater,
-telemetry, packet handler, or credential path. It reads local zone, position,
-and heading for pointer guidance. A user-clicked **Warp** button can send only
-`/uw hp <alias>` or `/uw sg <alias>` while the player is within interaction
-range of the selected service point. OddQ does not read or upload chat and does
-not move, target, trade, cast, attack, or follow.
+The v1.0.4 addon makes no network requests and has no bridge, backend, updater,
+telemetry, outgoing packet mutation, or credential path. It reads local zone,
+position, heading, mounted status, and only the named inventory/key-item evidence
+needed by the current authored step. A receive-only handler captures cutscene
+identity; it never blocks, changes, injects, or sends a packet. A user-clicked
+**Warp** button can send only `/uw hp <alias>` or `/uw sg <alias>` while the
+player is within interaction range of the selected service point. The pointer
+offers **Mount** with the temporary Raptor default only in CatsEye mount-capable
+zones, and **Dismount** only while mounted. An explicitly recommended Warp Home
+button prefers Instant Warp, then a ready Warp Ring, then Ducal Guard's Ring.
+OddQ does not read or upload chat and does not automate directional movement,
+targeting, trading, casting, attacking, or following.
 
-Its only runtime write is the first-launch marker at
-`config/addons/oddq/first-launch-seen.txt`.
+Its runtime writes are limited to `first-launch-seen.txt` and
+`resume-state.txt` under `config/addons/oddq`. Resume state contains only the
+bundled guide ID, step number, route choice, view, and window-open flag.
 
 See `SECURITY.md`, `CATSEYEXI_HOSTED.md`, the repository `LICENSE`, and
 `NOTICE.md` for the runtime, license, redistribution, and attribution boundaries.
@@ -93,7 +116,8 @@ CatsEyeXI-owned material is not relicensed by OddQ; see `NOTICE.md`.
 
 ## Verification boundary
 
-v1.0.3 has source, syntax, test, layout-probe, package, and installed-hash
-checks. The release package contains exactly 16 runtime Lua/data files. Those checks do not
-prove live on-screen behavior. No automated interaction with a CatsEyeXI game
-window is part of the release evidence; the owner checks in-game UX manually.
+v1.0.4 has source, syntax, test, layout-probe, package, archive, and downloaded-
+asset checks. The release package contains exactly 22 runtime Lua/data files.
+The interface images above are deterministic repo-local renders of the current
+Lua dimensions, colors, labels, and states; they are not live-client evidence.
+No automated interaction with a CatsEyeXI game window is part of this release.

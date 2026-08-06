@@ -8,6 +8,12 @@ end
 
 local guide_browser = {}
 
+local OWNERSHIP_MODES = {
+    { id = "ACE", label = "ACE" },
+    { id = "CW", label = "CW" },
+    { id = "WEW", label = "WeW" },
+}
+
 local categories = {
     {
         id = "catseye",
@@ -23,6 +29,27 @@ local categories = {
         empty_hint = "Retail and server quest guides.",
     },
     {
+        id = "zilart_quests",
+        label = "Zilart Quests",
+        mode = "quests",
+        expansion_keys = { "rise_of_the_zilart" },
+        empty_hint = "Outlands quest-log entries associated with Rise of the Zilart.",
+    },
+    {
+        id = "promathia_quests",
+        label = "Promathia Quests",
+        mode = "quests",
+        expansion_keys = { "chains_of_promathia" },
+        empty_hint = "Tavnazian quest-log entries associated with Chains of Promathia.",
+    },
+    {
+        id = "aht_urhgan_quests",
+        label = "Aht Urhgan Quests",
+        mode = "quests",
+        expansion_keys = { "treasures_of_aht_urhgan" },
+        empty_hint = "Aht Urhgan quest-log entries.",
+    },
+    {
         id = "missions",
         label = "Missions",
         mode = "missions",
@@ -35,10 +62,38 @@ local categories = {
         empty_hint = "Advanced job unlock guides.",
     },
     {
-        id = "exp",
-        label = "EXP Camps",
+        id = "npcs",
+        label = "NPC Finder",
+        mode = "npcs",
+        empty_hint = "Search an NPC name or something a source-backed merchant sells.",
+    },
+    {
+        id = "exp_solo",
+        label = "Solo (Trust) Camps",
         mode = "exp",
-        empty_hint = "Level-appropriate EXP camp guidance.",
+        exp_category_keys = { "solo_trusts", "duo_trusts" },
+        empty_hint = "Solo and duo camp guidance with Trust support.",
+    },
+    {
+        id = "exp_6man",
+        label = "6man Camps",
+        mode = "exp",
+        exp_category_keys = { "parties" },
+        empty_hint = "Traditional six-player party camp guidance.",
+    },
+    {
+        id = "exp_mageburn",
+        label = "MageBurn Camps",
+        mode = "exp",
+        exp_category_keys = { "manaburns" },
+        empty_hint = "Source-backed magic-burn camp guidance.",
+    },
+    {
+        id = "exp_meleeburn",
+        label = "MeleeBurn Camps",
+        mode = "exp",
+        exp_category_keys = { "pet_parties" },
+        empty_hint = "Source-backed pet and melee-burn camp guidance.",
     },
 }
 
@@ -70,6 +125,9 @@ end
 
 local function category_by_id(id)
     local target = trim(id)
+    if target == "exp" then
+        target = "exp_solo"
+    end
     for _, category in ipairs(categories) do
         if category.id == target then
             return category
@@ -137,82 +195,6 @@ local function first_step(entry)
     return {}
 end
 
-local function first_target(entry)
-    local step = first_step(entry)
-    local target = trim(entry.first_target_name)
-    if target == "" then
-        target = trim(step.npc_name)
-    end
-    if target == "" then
-        target = trim(step.mob_name)
-    end
-    if target == "" then
-        target = trim(step.object_name)
-    end
-    if target == "" then
-        target = trim(step.target_name)
-    end
-    return target
-end
-
-local function first_grid(entry)
-    local step = first_step(entry)
-    local grid = trim(entry.first_map_grid)
-    if grid == "" then
-        grid = trim(step.map_grid)
-    end
-    return grid
-end
-
-local function first_map_label(entry)
-    local step = first_step(entry)
-    local label = trim(step.target_map_label)
-    if label ~= "" then
-        return label
-    end
-    local map_id = tonumber(step.target_map_id)
-    if map_id ~= nil and map_id > 0 then
-        return "Map " .. tostring(math.floor(map_id))
-    end
-    return ""
-end
-
-local function coordinate_grid_label(value)
-    local raw = trim(value)
-    if raw == "" or raw:match("[A-Za-z]+/[A-Za-z]+%-[0-9]+") then
-        return ""
-    end
-    local tokens = {}
-    local seen = {}
-    for token in raw:gmatch("[A-Za-z]+%-[0-9]+") do
-        token = token:upper()
-        if seen[token] ~= true then
-            seen[token] = true
-            table.insert(tokens, token)
-        end
-    end
-    if #tokens == 0 then
-        return ""
-    end
-    return "(" .. table.concat(tokens, "/") .. ")"
-end
-
-local function first_location(entry)
-    local map = first_map_label(entry)
-    local grid = coordinate_grid_label(first_grid(entry))
-    if map ~= "" and grid ~= "" then
-        return map .. " - " .. grid
-    end
-    if map ~= "" then
-        return map
-    end
-    if grid ~= "" then
-        -- AGENT_MIN: reason=product wants an immediate display fallback; ceiling=presentation only; upgrade=replace when sourced map metadata is added.
-        return "Map #1 - " .. grid
-    end
-    return ""
-end
-
 local function first_zone_name(entry)
     local step = first_step(entry)
     local zone_id = tonumber(step.zone_id or (entry or {}).first_zone_id)
@@ -233,6 +215,9 @@ local function guide_kind(entry)
     if mode == "exp" then
         return "exp"
     end
+    if mode == "npcs" then
+        return "npc"
+    end
     return "quest"
 end
 
@@ -245,7 +230,47 @@ local function guide_action(entry)
     return { "plan", mode, objective_id }
 end
 
-local function guide_meta(entry)
+local function format_gil(value)
+    local text = tostring(math.max(0, math.floor(tonumber(value) or 0)))
+    return text:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "") .. " gil"
+end
+
+local function matching_service(entry, query)
+    local wanted = trim(query):lower()
+    if wanted == "" then
+        return nil
+    end
+    for _, service in ipairs(type((entry or {}).services) == "table" and entry.services or {}) do
+        local parts = { trim(service.name), trim(service.detail) }
+        for _, term in ipairs(type(service.search_terms) == "table" and service.search_terms or {}) do
+            table.insert(parts, trim(term))
+        end
+        if table.concat(parts, " "):lower():find(wanted, 1, true) ~= nil then
+            return service
+        end
+    end
+    return nil
+end
+
+local function game_mode_ownership(entry)
+    local supported = {}
+    for _, mode in ipairs(type((entry or {}).game_modes) == "table" and entry.game_modes or {}) do
+        supported[trim(mode):upper()] = true
+    end
+    local ownership = {}
+    local labels = {}
+    for _, mode in ipairs(OWNERSHIP_MODES) do
+        table.insert(ownership, {
+            id = mode.id,
+            label = mode.label,
+            supported = supported[mode.id] == true,
+        })
+        table.insert(labels, mode.label)
+    end
+    return table.concat(labels, " / "), ownership
+end
+
+local function guide_meta(entry, query)
     local parts = {}
     local level = level_label(entry)
     if level ~= "" then
@@ -260,31 +285,41 @@ local function guide_meta(entry)
         if zone ~= "" then
             table.insert(parts, zone)
         end
-        return table.concat(parts, " - ")
+        return table.concat(parts, " - "), nil
     end
-    local target = first_target(entry)
-    local location = first_location(entry)
-    if target ~= "" then
-        table.insert(parts, target .. (location ~= "" and " - " .. location or ""))
+    if trim((entry or {}).kind) == "npc_service" then
+        local service = matching_service(entry, query)
+        if service ~= nil then
+            local service_kind = trim(service.kind)
+            if service_kind == "sells" then
+                table.insert(parts, "Sells " .. trim(service.name))
+            elseif service_kind == "exchanges" then
+                table.insert(parts, "Exchanges: " .. trim(service.name))
+            else
+                table.insert(parts, "Offers: " .. trim(service.name))
+            end
+            if service_kind == "sells" and (tonumber(service.price) or 0) > 0 then
+                table.insert(parts, format_gil(service.price))
+            end
+        else
+            table.insert(parts, tostring(tonumber((entry or {}).service_count) or 0) .. " shop items")
+        end
+        local zone = trim((entry or {}).zone_name)
+        if zone ~= "" then
+            table.insert(parts, zone)
+        end
+        return table.concat(parts, " - "), nil
     end
-    local step_count = tonumber((entry or {}).step_count) or 0
-    if step_count <= 0 and type((entry or {}).steps) == "table" then
-        step_count = #entry.steps
-    end
-    if step_count > 0 then
-        table.insert(parts, tostring(step_count) .. " steps")
-    end
-    if (entry or {}).repeatable == true then
-        table.insert(parts, "Repeatable")
-    end
-    return table.concat(parts, " - ")
+    return game_mode_ownership(entry)
 end
 
-local function result_from_guide(entry)
+local function result_from_guide(entry, query)
+    local meta, ownership = guide_meta(entry, query)
     return {
         kind = "guide",
         label = trim((entry or {}).name),
-        meta = guide_meta(entry),
+        meta = meta,
+        ownership = ownership,
         entry = entry,
         args = guide_action(entry),
     }
@@ -305,6 +340,8 @@ local function build_results(state, category, limit)
         category.id,
         category.mode,
         trim(category.catalog_group),
+        table.concat(type(category.exp_category_keys) == "table" and category.exp_category_keys or {}, ","),
+        table.concat(type(category.expansion_keys) == "table" and category.expansion_keys or {}, ","),
         search_query(state, category),
         tostring(page),
         tostring(max_count),
@@ -315,9 +352,16 @@ local function build_results(state, category, limit)
     local results = {}
     local query = search_query(state, category)
     local last_index = page * max_count
-    local rows = objective_catalog.browse(category.mode, query, last_index + 1, category.catalog_group)
+    local rows = objective_catalog.browse(
+        category.mode,
+        query,
+        last_index + 1,
+        category.catalog_group,
+        category.exp_category_keys,
+        category.expansion_keys
+    )
     for index = ((page - 1) * max_count) + 1, math.min(last_index, #rows) do
-        table.insert(results, result_from_guide(rows[index]))
+        table.insert(results, result_from_guide(rows[index], query))
     end
     local has_next = #rows > last_index
     state._guide_browser_results_cache_key = cache_key
@@ -360,7 +404,7 @@ function guide_browser.render_state(state)
     local lines = {
         "Guide Browser",
         "Category: " .. model.category.label,
-        "Categories: Catseye Quests, All Quests, Missions, Job Unlocks, EXP Camps",
+        "Categories: Catseye Quests, All Quests, Zilart Quests, Promathia Quests, Aht Urhgan Quests, Missions, Job Unlocks, NPC Finder, Solo (Trust) Camps, 6man Camps, MageBurn Camps, MeleeBurn Camps",
         "Query: " .. (model.query ~= "" and model.query or "(browse)"),
         "Page: " .. tostring(model.page),
         "Catalog Counts: "
@@ -411,6 +455,18 @@ local function same_line(imgui, gap)
     local ok = pcall(imgui.SameLine, 0.0, gap)
     if not ok then
         imgui.SameLine()
+    end
+end
+
+local function render_ownership(imgui, ownership)
+    for index, mode in ipairs(type(ownership) == "table" and ownership or {}) do
+        if index > 1 then
+            same_line(imgui)
+            skin.text_colored(imgui, skin.colors.white, "/", "body")
+            same_line(imgui)
+        end
+        local color = mode.supported == true and skin.colors.blue_highlight or skin.colors.white
+        skin.text_colored(imgui, color, mode.label, "body")
     end
 end
 
@@ -490,7 +546,9 @@ end
 
 local function render_category_row(imgui, state, model, layout)
     for index, category in ipairs(model.categories) do
-        if index > 1 and not (layout.wrap_categories == true and index == 4) then
+        local row_break = (layout.wrap_categories == true and (index == 4 or index == 7 or index == 10))
+            or (layout.wrap_categories ~= true and (index == 6 or index == 10))
+        if index > 1 and not row_break then
             same_line(imgui, tonumber(layout.category_gap) or 6.0)
         end
         local active = category.id == model.category.id
@@ -536,7 +594,9 @@ local function render_results_pane(imgui, state, model, on_command, layout)
             ) then
                 state.guide_browser_selected_index = index
             end
-            if result.meta ~= "" then
+            if type(result.ownership) == "table" and #result.ownership > 0 then
+                render_ownership(imgui, result.ownership)
+            elseif result.meta ~= "" then
                 muted_line(imgui, result.meta)
             end
         end
@@ -567,7 +627,7 @@ function guide_browser.render(imgui, state, on_command)
     ensure_state(state)
     local layout = ((skin.layout.main_window or {}).guide_browser or {})
     skin.text_colored(imgui, skin.colors.blue_highlight, "Find a guide", "title")
-    text_line(imgui, "Search quests, missions, job unlocks, and EXP camps.")
+    text_line(imgui, "Search guides, EXP camps, NPC names, and merchant stock.")
     local previous_query = state.guide_browser_query
     if imgui.SetNextItemWidth ~= nil then
         pcall(imgui.SetNextItemWidth, tonumber(layout.search_width) or -1.0)

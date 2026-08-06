@@ -1,0 +1,76 @@
+local mount_zones = {}
+
+-- CatsEyeXI zone-settings snapshot rows whose ZONEMISC value contains the
+-- MOUNT capability bit (0x0004). Source SHA-256 on 2026-08-05:
+-- 3AED32D055326520BA753F7552036B723B7A44256D77840FC53D80D3109516EA
+local MOUNTABLE_ZONE_IDS = {
+    [2] = true,
+    [4] = true,
+    [5] = true,
+    [7] = true,
+    [24] = true,
+    [25] = true,
+    [51] = true,
+    [52] = true,
+    [61] = true,
+    [70] = true,
+    [79] = true,
+    [81] = true,
+    [82] = true,
+    [83] = true,
+    [84] = true,
+    [88] = true,
+    [89] = true,
+    [90] = true,
+    [91] = true,
+    [95] = true,
+    [96] = true,
+    [97] = true,
+    [98] = true,
+    [100] = true,
+    [101] = true,
+    [102] = true,
+    [103] = true,
+    [104] = true,
+    [105] = true,
+    [106] = true,
+    [107] = true,
+    [108] = true,
+    [109] = true,
+    [110] = true,
+    [111] = true,
+    [112] = true,
+    [113] = true,
+    [114] = true,
+    [115] = true,
+    [116] = true,
+    [117] = true,
+    [118] = true,
+    [119] = true,
+    [120] = true,
+    [121] = true,
+    [122] = true,
+    [123] = true,
+    [124] = true,
+    [125] = true,
+    [126] = true,
+    [127] = true,
+    [128] = true,
+    [136] = true,
+    [137] = true,
+    [210] = true,
+    [260] = true,
+    [261] = true,
+    [262] = true,
+    [263] = true,
+    [265] = true,
+    [266] = true,
+    [267] = true,
+}
+
+function mount_zones.contains(zone_id)
+    zone_id = tonumber(zone_id)
+    return zone_id ~= nil and MOUNTABLE_ZONE_IDS[zone_id] == true
+end
+
+return mount_zones
