@@ -23080,6 +23080,8 @@ return {
     required_key_items = {},
     step_id = "enter_maze_of_shakhrami",
     step_kind = "travel",
+    target_map_id = 1,
+    target_map_label = "Map 1",
     target_name = "Maze of Shakhrami Survival Guide",
     zone_id = 198,
   }, {

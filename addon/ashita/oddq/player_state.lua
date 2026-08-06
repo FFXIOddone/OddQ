@@ -118,6 +118,16 @@ local function read_level()
     return nil
 end
 
+local function read_rank()
+    local player = read_player()
+    if player == nil or player.GetRank == nil then
+        return nil
+    end
+    return tonumber(safe_call(function()
+        return player:GetRank()
+    end))
+end
+
 local function read_mounted()
     local player = read_player()
     if player == nil or player.GetBuffs == nil then
@@ -289,6 +299,10 @@ function player_state.current_live_context(fallback)
         result.key_items = tracked_key_item_names(fallback.scan_key_item_names)
     end
     return result
+end
+
+function player_state.current_rank(fallback)
+    return read_rank() or tonumber(fallback)
 end
 
 return player_state

@@ -1,6 +1,6 @@
 # CatsEyeXI Runtime Profile
 
-OddQ v1.0.4 uses one CatsEyeXI profile: a local Ashita addon with bundled guide
+OddQ v1.0.5 uses one CatsEyeXI profile: a local Ashita addon with bundled guide
 data. There are no hosted endpoints, replacement keys, allowlists, bridge
 settings, backend services, or server changes to configure.
 
@@ -10,14 +10,14 @@ settings, backend services, or server changes to configure.
 Ashita/addons/oddq
 ```
 
-The 22-file addon is loaded with `/addon load oddq` and controlled through
+The 24-file addon is loaded with `/addon load oddq` and controlled through
 `/odd`. It does not install an executable, DLL, Windows service, scheduled task,
 or server module.
 
 ## Client boundary
 
 OddQ renders bundled guide data in one shared Browser/Guide window and a compact
-Step Pointer. It reads local zone, position, heading, mounted status, and only
+Step Pointer. It reads local zone, position, heading, rank, mounted status, and only
 the current step's named item/key-item evidence. A receive-only cutscene handler
 and copied-field quest/mission readers cannot block or mutate packets. OddQ does
 not automate movement, targeting, trading, or combat. A user-clicked **Warp**
@@ -28,13 +28,15 @@ server's mount capability bit, and `/dismount` only while mounted.
 
 Its persistent files are `first-launch-seen.txt` and `resume-state.txt` under
 `config/addons/oddq` in the active Ashita installation. Resume state contains
-only the bundled guide ID, step number, route choice, view, and window-open flag.
+only the bundled guide ID, step number, route choice, view, window-open flag,
+and the armed/pending booleans for the Rank 10 milestone notice. It does not
+persist the player's rank.
 
 ## Staff review checklist
 
 - Confirm `LICENSE` and `NOTICE.md` accompany any CatsEyeXI redistribution.
 - Confirm corresponding OddQ source is available and modified copies identify changes.
-- Confirm the archive's 22-file addon tree matches `MANIFEST.json` and
+- Confirm the archive's 24-file addon tree matches `MANIFEST.json` and
   `SHA256SUMS.txt`.
 - Confirm no network, bridge, backend, updater, or telemetry module is shipped.
 - Confirm no packet mutation API is referenced and every outgoing command is a
@@ -69,5 +71,5 @@ The complete attribution and third-party boundary is in `NOTICE.md`.
 
 Source scans, Lua syntax checks, unit tests, layout probes, and archive checks
 are offline evidence. They do not prove live-client UI behavior. CatsEyeXI
-window interaction is not automated for v1.0.4; in-game review is manual and must
+window interaction is not automated for v1.0.5; in-game review is manual and must
 be performed only by an authorized tester.

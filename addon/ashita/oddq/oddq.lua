@@ -1,6 +1,6 @@
 addon.name = "oddq"
 addon.author = "Odd"
-addon.version = "1.0.4"
+addon.version = "1.0.5"
 addon.desc = "Local quest and mission guide browser."
 
 require("common")
@@ -11,7 +11,9 @@ local main_window = require("ui/main_window")
 local objective_catalog = require("objective_catalog")
 local local_filesystem = require("local_filesystem")
 local player_state = require("player_state")
+local rank10_milestone = require("rank10_milestone")
 local route_steps = require("route_steps")
+local rank10_popup = require("ui/rank10_popup")
 local step_pointer = require("ui/step_pointer")
 local warp_home = require("warp_home")
 local progression_triggers = require("progression_triggers")
@@ -30,6 +32,8 @@ local oddq = {
     cutscene_event_id = nil,
     cutscene_zone_id = nil,
     progression_step_key = nil,
+    rank10_milestone = rank10_milestone.new_state(),
+    next_rank_poll = 0,
 }
 
 local category_modes = {
@@ -226,6 +230,14 @@ local function entry_label(entry)
         or "selected guide"
 end
 
+local function current_player_rank()
+    if player_state.current_rank == nil then
+        return nil
+    end
+    local ok, rank = pcall(player_state.current_rank)
+    return ok and tonumber(rank) or nil
+end
+
 local function load_local_catalog_guide(entry)
     if type(entry) ~= "table" then
         return false
@@ -240,6 +252,7 @@ local function load_local_catalog_guide(entry)
     objective.objective_kind = trim(objective.objective_kind) ~= "" and objective.objective_kind or entry.kind
     objective.mode = objective_catalog.mode_for_entry(entry)
     oddq.tracked_objective = objective
+    rank10_milestone.arm_for_guide(oddq.rank10_milestone, objective, current_player_rank())
     oddq.guidance.active_mode = objective.mode or oddq.guidance.active_mode
 
     local steps = (current_guidance_objective() or {}).steps
@@ -268,6 +281,8 @@ local function current_resume_state()
         route_mode = route_steps.normalize_mode(oddq.guidance.route_mode),
         main_view = main_view,
         main_window_open = oddq.guidance.main_window_open == true,
+        rank10_milestone_armed = oddq.rank10_milestone.armed == true,
+        rank10_milestone_pending = oddq.rank10_milestone.pending == true,
     }
 end
 
@@ -279,6 +294,8 @@ local function resume_state_document(state)
         "route_mode=" .. state.route_mode,
         "main_view=" .. state.main_view,
         "main_window_open=" .. (state.main_window_open and "true" or "false"),
+        "rank10_milestone_armed=" .. (state.rank10_milestone_armed and "true" or "false"),
+        "rank10_milestone_pending=" .. (state.rank10_milestone_pending and "true" or "false"),
         "",
     }, "\n")
 end
@@ -300,6 +317,16 @@ local function persist_resume_state()
     return true
 end
 
+local function remove_resume_state()
+    local path = resume_state_path()
+    resume_state_signature = nil
+    if path == nil or not file_exists(path) then
+        return true
+    end
+    local ok, removed = pcall(os.remove, path)
+    return ok and removed == true
+end
+
 local function restore_resume_state()
     local state = read_resume_state(resume_state_path())
     if state == nil then
@@ -317,9 +344,39 @@ local function restore_resume_state()
     oddq.guidance.main_view = state.main_view == "guide" and "guide" or "browse"
     oddq.guidance.main_window_open = state.main_window_open == "true"
     oddq.visible = oddq.guidance.main_window_open
+    if state.rank10_milestone_armed ~= nil or state.rank10_milestone_pending ~= nil then
+        rank10_milestone.restore(
+            oddq.rank10_milestone,
+            state.rank10_milestone_armed == "true",
+            state.rank10_milestone_pending == "true"
+        )
+    end
     guidance_state.reset_step_transition(oddq.guidance)
     resume_state_signature = resume_state_document(current_resume_state())
     return true
+end
+
+local function cancel_guide()
+    local had_guide = oddq.tracked_objective ~= nil
+    oddq.tracked_objective = nil
+    oddq.guidance.guide_step_tab_index = 0
+    oddq.guidance.warp_home_action = nil
+    guidance_state.reset_step_transition(oddq.guidance)
+    oddq.progression_state = progression_triggers.new_state()
+    oddq.progression_step_key = nil
+    oddq.next_progress_poll = 0
+    oddq.cutscene_event_id = nil
+    oddq.cutscene_zone_id = nil
+    oddq.rank10_milestone.armed = false
+    oddq.rank10_milestone.last_rank = nil
+    local resume_removed = remove_resume_state()
+    open_browser()
+    if had_guide then
+        print("OddQ guide canceled.")
+    end
+    if not resume_removed then
+        print("OddQ could not remove the saved guide state; check config/addons/oddq/resume-state.txt.")
+    end
 end
 
 local function entry_matches_mode(entry, mode)
@@ -472,12 +529,20 @@ local function print_help()
     print("/odd missions|quests|jobs|npcs - browse a guide category")
     print("/odd solo|6man|mageburn|meleeburn - browse an EXP camp category")
     print("/odd next|previous - move through the loaded guide")
+    print("/odd cancel - cancel the loaded guide and clear its resume state")
     print("/odd route warp|no-warp - choose instructions for your teleport unlocks")
     print("/odd status - print the current step")
     print("/odd close - close OddQ")
 end
 
 local function render_ui()
+    local now = os.clock()
+    if now >= (oddq.next_rank_poll or 0) then
+        oddq.next_rank_poll = now + 0.5
+        if rank10_milestone.observe_rank(oddq.rank10_milestone, current_player_rank()) then
+            print("OddQ: Congratulations on Rank 10! Your CatsEyeXI milestone reward is ready.")
+        end
+    end
     local objective = current_guidance_objective()
     local selected = math.floor(tonumber(oddq.guidance.guide_step_tab_index) or 1)
     local step = type(objective) == "table" and type(objective.steps) == "table"
@@ -513,7 +578,7 @@ local function render_ui()
         print("OddQ advanced to step " .. tostring(step_index) .. " of " .. tostring(#steps) .. ".")
     end
 
-    local now = os.clock()
+    now = os.clock()
     if not advanced and now >= (oddq.next_progress_poll or 0) then
         oddq.next_progress_poll = now + 0.5
         local events = progression_triggers.observe_live(oddq.progression_state, live_context)
@@ -528,27 +593,31 @@ local function render_ui()
         end
     end
 
-    if imgui == nil or oddq.visible ~= true then
+    if imgui == nil then
         persist_resume_state()
         return
     end
 
-    objective = current_guidance_objective()
-    oddq.guidance.warp_home_action = warp_home.current_action()
-    main_window.render(imgui, oddq.guidance, objective, function(args)
-        handle_command(args or {})
-    end)
-    step_pointer.render(imgui, objective, oddq.guidance, live_context, function(command)
-        local authorized = type(command) == "string" and (
-            command:match("^/uw [hs][pg] ") ~= nil
-            or command == '/mount "Raptor"'
-            or command == "/dismount"
-        )
-        if authorized then
-            local chat = AshitaCore ~= nil and AshitaCore.GetChatManager ~= nil and AshitaCore:GetChatManager() or nil
-            if chat ~= nil and chat.QueueCommand ~= nil then chat:QueueCommand(-1, command) end
-        end
-    end)
+    if oddq.visible == true then
+        objective = current_guidance_objective()
+        oddq.guidance.warp_home_action = warp_home.current_action()
+        main_window.render(imgui, oddq.guidance, objective, function(args)
+            handle_command(args or {})
+        end)
+        objective = current_guidance_objective()
+        step_pointer.render(imgui, objective, oddq.guidance, live_context, function(command)
+            local authorized = type(command) == "string" and (
+                command:match("^/uw [hs][pg] ") ~= nil
+                or command == '/mount "Raptor"'
+                or command == "/dismount"
+            )
+            if authorized then
+                local chat = AshitaCore ~= nil and AshitaCore.GetChatManager ~= nil and AshitaCore:GetChatManager() or nil
+                if chat ~= nil and chat.QueueCommand ~= nil then chat:QueueCommand(-1, command) end
+            end
+        end)
+    end
+    rank10_popup.render(imgui, oddq.rank10_milestone)
     persist_resume_state()
 end
 
@@ -582,6 +651,10 @@ function handle_command(args)
     if command == "close" then
         oddq.guidance.main_window_open = false
         oddq.visible = false
+        return
+    end
+    if command == "cancel" then
+        cancel_guide()
         return
     end
     if command == "back" then

@@ -1,10 +1,10 @@
-# OddQ v1.0.4 Review Guide
+# OddQ v1.0.5 Review Guide
 
 This is the shortest review path for the local-only OddQ MVP.
 
 ## What ships
 
-The release contains exactly 22 runtime Lua/data files under
+The release contains exactly 24 runtime Lua/data files under
 `Ashita/addons/oddq`:
 
 ```text
@@ -13,6 +13,7 @@ guidance_state.lua
 objective_catalog.lua
 local_filesystem.lua
 player_state.lua
+rank10_milestone.lua
 route_steps.lua
 uberwarp_routes.lua
 warp_home.lua
@@ -21,6 +22,7 @@ packet_state/readers.lua
 ui/guide_browser.lua
 ui/imgui_text.lua
 ui/main_window.lua
+ui/rank10_popup.lua
 ui/route_window.lua
 ui/skin.lua
 ui/window_state.lua
@@ -52,7 +54,7 @@ Review these properties directly in the shipped Lua tree:
    `/item`, or `/equip`, `/wait`, `/item`, for the selected ready warp item.
 2. No network client or endpoint is loaded by the addon.
 3. The D3D-present handler renders bundled local guide data and reads local
-   zone, position, heading, mounted status, plus only the current step's named
+   zone, position, heading, rank, mounted status, plus only the current step's named
    item/key-item evidence.
 4. A source-backed map number appears beside its grid. If only the grid is
    established, the UI temporarily displays `Map #1`; source data remains unset.
@@ -108,7 +110,7 @@ Run this checklist manually in an approved environment:
 
 ## Release artifact
 
-The release zip should contain the installable 22-file
+The release zip should contain the installable 24-file
 `Ashita/addons/oddq` tree plus release notes, a file manifest, and
 `SHA256SUMS.txt`. It should not contain development caches, private paths,
 captures, credentials, executables, or unrelated projects.
@@ -120,8 +122,13 @@ alongside the addon.
 ## Evidence boundary
 
 Offline tests and layout probes establish source and package contracts. They do
-not establish live-client UX. v1.0.4 makes no automated CatsEyeXI-window test
+not establish live-client UX. v1.0.5 makes no automated CatsEyeXI-window test
 claim; the player-facing checklist above remains a manual review step.
+
+Release UI screenshots must be direct in-game captures supplied or explicitly approved by the product owner.
+Do not generate, synthesize, recreate, or substitute UI images. If a current
+capture is unavailable, omit UI images from the release and ask the product
+owner to provide screenshots.
 
 ## Known limitations
 

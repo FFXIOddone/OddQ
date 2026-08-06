@@ -10,6 +10,19 @@ local PI = math.pi
 local TWO_PI = PI * 2
 local WARP_USE_RANGE_YALMS = 6.0
 local DEFAULT_MOUNT_NAME = "Raptor"
+-- User-captured raw X/Y/Z is 7.146/-29.7/-44.999. OddQ stores the raw
+-- vertical Z axis as y and the raw planar Y axis as z.
+local HEAVENS_TOWER_TRANSPORTER = {
+    zone_id = 242,
+    upper_floor_y_threshold = -40.0,
+    position = {
+        x = 7.146,
+        y = -44.999,
+        z = -29.7,
+        object_name = "Transporter",
+        position_kind = "exact_target",
+    },
+}
 -- The fixed 300px pointer leaves about 190px after the arrow, spacing,
 -- padding, and right inset. At the scaled 14px font, 27 characters is the
 -- conservative single-line label budget.
@@ -121,10 +134,8 @@ local function compact_position_label(step, target)
     local npc_name = tostring((target or {}).npc_name or "")
     local object_name = tostring((target or {}).object_name or "")
     local general_anchor = tostring((target or {}).position_kind or "") == "map_grid_anchor"
-    if not general_anchor and npc_name == "" then
+    if not general_anchor and npc_name == "" and object_name == "" then
         npc_name = tostring((step or {}).npc_name or "")
-    end
-    if not general_anchor and object_name == "" then
         object_name = tostring((step or {}).object_name or "")
     end
     local name = ""
@@ -196,6 +207,24 @@ local function step_positions(step)
     return positions
 end
 
+local function heavens_tower_transit_target(current_zone, current, target_zone, candidates)
+    local transit = HEAVENS_TOWER_TRANSPORTER
+    if tonumber(current_zone) ~= transit.zone_id or type(current) ~= "table"
+        or tonumber(current.y) == nil
+        or current.y > transit.upper_floor_y_threshold then
+        return nil
+    end
+    if tonumber(target_zone) == tonumber(current_zone) then
+        for _, candidate in ipairs(candidates or {}) do
+            if tonumber(candidate.y) ~= nil
+                and candidate.y <= transit.upper_floor_y_threshold then
+                return nil
+            end
+        end
+    end
+    return copy_position(transit.position)
+end
+
 local function has_authored_warp_stage(step)
     return type((step or {}).warp_stages) == "table" and #step.warp_stages > 0
 end
@@ -252,11 +281,19 @@ local function atan2(y, x)
     return math.atan(y, x)
 end
 
+local function spatial_distance(a, b)
+    local dx = b.x - a.x
+    local dy = (b.y or 0) - (a.y or 0)
+    local dz = b.z - a.z
+    return math.sqrt((dx * dx) + (dy * dy) + (dz * dz))
+end
+
 local function arrow_vector(current, target, heading)
     local dx = target.x - current.x
     local dz = target.z - current.z
-    local distance = math.sqrt((dx * dx) + (dz * dz))
-    if distance <= 0.000001 then
+    local horizontal_distance = math.sqrt((dx * dx) + (dz * dz))
+    local distance = spatial_distance(current, target)
+    if horizontal_distance <= 0.000001 then
         return { x = 0, y = 0 }, distance
     end
     local relative = normalize_angle(atan2(dx, dz) - heading)
@@ -318,6 +355,11 @@ function step_pointer.build(objective, guidance, live_context)
     if current == nil or heading == nil then
         return { available = false, reason = "live_direction_unavailable" }
     end
+    local local_transit = heavens_tower_transit_target(current_zone, current, target_zone, candidates)
+    if local_transit ~= nil then
+        candidates = { local_transit }
+        using_warp_approach = false
+    end
     if target_zone ~= nil
         and current_zone ~= nil
         and target_zone == current_zone
@@ -357,9 +399,10 @@ function step_pointer.build(objective, guidance, live_context)
     local target, warp, best_cost = nil, nil, nil
     for _, candidate in ipairs(candidates) do
         local route_candidate = using_warp_approach and preferred_warp_position or candidate
-        local route_target_zone = using_warp_approach and preferred_warp_zone or target_zone
-        local dx, dz = route_candidate.x - current.x, route_candidate.z - current.z
-        local walking_cost = math.sqrt((dx * dx) + (dz * dz))
+        local route_target_zone = local_transit ~= nil and current_zone
+            or using_warp_approach and preferred_warp_zone
+            or target_zone
+        local walking_cost = spatial_distance(current, route_candidate)
         local candidate_warp = nil
         local cost = walking_cost
         if not warp_suppressed and has_authored_warp_stage(step) then
@@ -415,7 +458,9 @@ function step_pointer.build(objective, guidance, live_context)
         uses_backward_step = index < selected_index,
         step_id = tostring((step or {}).step_id or ""),
         target = target,
-        target_zone_id = using_warp_approach and preferred_warp_zone or target_zone,
+        target_zone_id = local_transit ~= nil and current_zone
+            or using_warp_approach and preferred_warp_zone
+            or target_zone,
         current = current,
         distance = distance,
         distance_label = string.format("%.1fy", distance),
@@ -435,6 +480,7 @@ function step_pointer.build(objective, guidance, live_context)
                 .. compact_route_label(warp.destination_label)
         ) or nil,
         warp_available = warp ~= nil and distance <= WARP_USE_RANGE_YALMS,
+        uses_local_transit = local_transit ~= nil,
     }
 end
 
