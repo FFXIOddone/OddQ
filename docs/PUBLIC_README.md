@@ -9,21 +9,16 @@ OddQ is a local Ashita v4 addon with two focused views in one shared window:
 
 The `OddQ` main window is movable and content-bounded. A compact, always-visible
 Step Pointer reads the player's local zone, position, and heading and points at
-the selected guide step. There is no Settings popup, developer tuner, map-pin
+the selected guide step. OddQ also reads rank for its opt-in Rank 9-1 milestone
+watch. There is no Settings popup, developer tuner, map-pin
 panel, bridge, backend, updater, or outgoing packet automation.
 
 ## Release status
 
-`v1.0.4` is the current stable public patch release. It adds persistent guide
-resume state, expansion quest collections, mode ownership labels, Warp Home,
-passive authored progression checks, and the broad nation-mission routing and
-pointer corrections from the latest playtest pass.
-
-## Current interface
-
-![OddQ Main window showing a loaded mission guide](images/oddq-main-window-v1.0.4.png)
-
-![OddQ Step Pointer with Warp active](images/oddq-pointer-warp-v1.0.4.png)
+`v1.0.5` is the current stable public patch release. It adds **Cancel Guide**,
+elevation-aware pointer distance, Heaven's Tower Transporter routing, fixed
+mapless targets, the Rank 10 milestone notice, and the latest mission-routing
+corrections from the playtest backlog.
 
 ## Install
 
@@ -53,15 +48,20 @@ No executable, DLL, service, bridge, backend, or server change is required.
 /odd exp                   Browse EXP-camp guides
 /odd next                  Advance to the next guide step
 /odd previous              Return to the previous guide step
+/odd cancel                Cancel the loaded guide and clear its resume state
 /odd status                Print concise current-step guidance
 /odd close                 Close OddQ
 /odd help                  Print the command list
 ```
 
 Loading a guide replaces the Browser view in the same window. **Back to
-Guides** returns to search without opening another window.
+Guides** returns to search without opening another window. In the Browser,
+**Cancel Guide** ends the current guide and removes its saved reload state.
 OddQ restores the last loaded guide, selected step, Warp/No-Warp choice, and
 window state after an addon reload or the next login.
+Opening any nation's Rank 9-1 mission while the character is Rank 9 arms a
+local watch. When Rank changes to 10, OddQ shows a persistent congratulations
+window with the CatsEyeXI milestone collection point and all reward choices.
 Quest, mission, and job search rows show `ACE / CW / WeW` ownership instead of
 map metadata. Supported modes are blue, unavailable modes are white, and the
 separators remain white.
@@ -86,9 +86,9 @@ only** instead of presenting invented directions.
 
 ## Local-only safety and privacy
 
-The v1.0.4 addon makes no network requests and has no bridge, backend, updater,
+The v1.0.5 addon makes no network requests and has no bridge, backend, updater,
 telemetry, outgoing packet mutation, or credential path. It reads local zone,
-position, heading, mounted status, and only the named inventory/key-item evidence
+position, heading, rank, mounted status, and only the named inventory/key-item evidence
 needed by the current authored step. A receive-only handler captures cutscene
 identity; it never blocks, changes, injects, or sends a packet. A user-clicked
 **Warp** button can send only `/uw hp <alias>` or `/uw sg <alias>` while the
@@ -101,7 +101,8 @@ targeting, trading, casting, attacking, or following.
 
 Its runtime writes are limited to `first-launch-seen.txt` and
 `resume-state.txt` under `config/addons/oddq`. Resume state contains only the
-bundled guide ID, step number, route choice, view, and window-open flag.
+bundled guide ID, step number, route choice, view, window-open flag, and the two
+booleans needed to restore the Rank 10 milestone notice. Player rank is not persisted.
 
 See `SECURITY.md`, `CATSEYEXI_HOSTED.md`, the repository `LICENSE`, and
 `NOTICE.md` for the runtime, license, redistribution, and attribution boundaries.
@@ -116,8 +117,7 @@ CatsEyeXI-owned material is not relicensed by OddQ; see `NOTICE.md`.
 
 ## Verification boundary
 
-v1.0.4 has source, syntax, test, layout-probe, package, archive, and downloaded-
-asset checks. The release package contains exactly 22 runtime Lua/data files.
-The interface images above are deterministic repo-local renders of the current
-Lua dimensions, colors, labels, and states; they are not live-client evidence.
-No automated interaction with a CatsEyeXI game window is part of this release.
+v1.0.5 has source, syntax, test, layout-probe, package, archive, and downloaded-
+asset checks. The release package contains exactly 24 runtime Lua/data files.
+No UI screenshot is included in the current release evidence. No automated
+interaction with a CatsEyeXI game window is part of this release.

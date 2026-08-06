@@ -81,6 +81,7 @@ function main_window.render_state(state, objective)
     else
         if has_loaded_guide(objective) then
             table.insert(lines, "Resume: " .. guide_title(objective))
+            table.insert(lines, "Cancel Guide")
         end
         for line in guide_browser.render_state(state):gmatch("[^\n]+") do
             table.insert(lines, line)
@@ -89,7 +90,7 @@ function main_window.render_state(state, objective)
     return table.concat(lines, "\n")
 end
 
-local function render_resume_strip(imgui, state, objective)
+local function render_resume_strip(imgui, state, objective, on_command)
     if not has_loaded_guide(objective) then
         return
     end
@@ -98,13 +99,19 @@ local function render_resume_strip(imgui, state, objective)
     if skin.button(imgui, "Resume Guide##oddq_resume_guide", "secondary") then
         state.main_view = "guide"
     end
+    if imgui.SameLine ~= nil then
+        imgui.SameLine()
+    end
+    if skin.button(imgui, "Cancel Guide##oddq_cancel_guide", "secondary") then
+        dispatch_command(on_command, { "cancel" })
+    end
     if imgui.Separator ~= nil then
         imgui.Separator()
     end
 end
 
 local function render_browser(imgui, state, objective, on_command)
-    render_resume_strip(imgui, state, objective)
+    render_resume_strip(imgui, state, objective, on_command)
     guide_browser.render(imgui, state, on_command)
 end
 

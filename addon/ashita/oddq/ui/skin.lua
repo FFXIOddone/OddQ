@@ -21,6 +21,10 @@ skin.colors = {
 }
 
 skin.layout = {
+    rank10_popup = {
+        width = 560.0,
+        height = 410.0,
+    },
     step_pointer = {
         width = 300.0,
         height = 146.0,

@@ -1,14 +1,14 @@
 # OddQ Security
 
-OddQ v1.0.4 is a local, guidance-only Ashita addon. It is not movement automation
+OddQ v1.0.5 is a local, guidance-only Ashita addon. It is not movement automation
 and does not require a companion process or server component.
 
 ## Runtime boundary
 
-The shipped 22-file addon:
+The shipped 24-file addon:
 
 - renders a local Guide Browser/Guide window and compact Step Pointer;
-- reads bundled guide data plus the player's local zone, position, heading,
+- reads bundled guide data plus the player's local zone, position, heading, rank,
   mounted status, and only current-step named item/key-item evidence;
 - passively observes incoming cutscene identity and ships receive-only copied-field
   quest/mission readers; none can block or mutate a packet;
@@ -51,7 +51,8 @@ config/addons/oddq/resume-state.txt
 
 The marker records only that the addon has launched. Resume state records only
 a bundled guide ID, clamped step number, Warp/No-Warp choice, Browser/Guide
-view, and window-open flag. Unknown or malformed guide state fails closed.
+view, window-open flag, and the armed/pending booleans for the Rank 10 milestone
+notice. It does not persist the player's rank. Unknown or malformed guide state fails closed.
 Neither file contains live coordinates, chat, credentials, private messages,
 or raw packet data.
 
