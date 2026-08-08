@@ -1,11 +1,11 @@
 # OddQ Security
 
-OddQ v1.0.5 is a local, guidance-only Ashita addon. It is not movement automation
+OddQ v1.0.6 is a local, guidance-only Ashita addon. It is not movement automation
 and does not require a companion process or server component.
 
 ## Runtime boundary
 
-The shipped 24-file addon:
+The shipped 29-file addon:
 
 - renders a local Guide Browser/Guide window and compact Step Pointer;
 - reads bundled guide data plus the player's local zone, position, heading, rank,

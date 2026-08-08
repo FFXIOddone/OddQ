@@ -15,10 +15,34 @@ panel, bridge, backend, updater, or outgoing packet automation.
 
 ## Release status
 
-`v1.0.5` is the current stable public patch release. It adds **Cancel Guide**,
-elevation-aware pointer distance, Heaven's Tower Transporter routing, fixed
-mapless targets, the Rank 10 milestone notice, and the latest mission-routing
-corrections from the playtest backlog.
+`v1.0.6` is the current stable public patch release. It concludes the Windurst
+nation-mission live-test cycle with detailed maze and map-change routing through
+Mission 9-2. It also adds the faceted 3D HP-crystal pointer, corrected
+camera-relative direction, HP/SG-first route selection, mapless-zone exits,
+stronger progression triggers, and a durable `/odd` command spine.
+
+## In-game views
+
+### Active mission assistance
+
+The Browser and Step Pointer work together while the pointer offers the fastest
+available warp route.
+
+![OddQ active mission assistance with the Warp button available](images/oddq-mission-guide-warp.png)
+
+### Guide display
+
+The focused Guide view keeps the current mission step, destination, progress,
+and navigation controls together while the Step Pointer remains visible.
+
+![OddQ mission Guide display with the Step Pointer](images/oddq-guide-display.png)
+
+### Minimal obstruction
+
+Both OddQ windows collapse to their title bars when the player wants an
+unobstructed game view.
+
+![OddQ Guide and Step Pointer minimized to their title bars](images/oddq-minimized-windows.png)
 
 ## Install
 
@@ -48,8 +72,11 @@ No executable, DLL, service, bridge, backend, or server change is required.
 /odd exp                   Browse EXP-camp guides
 /odd next                  Advance to the next guide step
 /odd previous              Return to the previous guide step
+/odd route warp|no-warp    Choose guidance for your teleport unlocks
+/odd warp-home             Use the recommended available Warp Home item
 /odd cancel                Cancel the loaded guide and clear its resume state
 /odd status                Print concise current-step guidance
+/odd npcs [search]         Browse or search NPC locations
 /odd close                 Close OddQ
 /odd help                  Print the command list
 ```
@@ -86,7 +113,7 @@ only** instead of presenting invented directions.
 
 ## Local-only safety and privacy
 
-The v1.0.5 addon makes no network requests and has no bridge, backend, updater,
+The v1.0.6 addon makes no network requests and has no bridge, backend, updater,
 telemetry, outgoing packet mutation, or credential path. It reads local zone,
 position, heading, rank, mounted status, and only the named inventory/key-item evidence
 needed by the current authored step. A receive-only handler captures cutscene
@@ -117,7 +144,9 @@ CatsEyeXI-owned material is not relicensed by OddQ; see `NOTICE.md`.
 
 ## Verification boundary
 
-v1.0.5 has source, syntax, test, layout-probe, package, archive, and downloaded-
-asset checks. The release package contains exactly 24 runtime Lua/data files.
-No UI screenshot is included in the current release evidence. No automated
-interaction with a CatsEyeXI game window is part of this release.
+v1.0.6 has source, syntax, test, layout-probe, package, archive, downloaded-
+asset, and installed-hash checks. The release package contains exactly 29
+runtime Lua/data files. The screenshots above are direct in-game captures
+supplied by the product owner; they are repository documentation and are not
+included in the release ZIP. No automated interaction with a CatsEyeXI game
+window is part of this release.

@@ -1,14 +1,15 @@
-# OddQ v1.0.5 Review Guide
+# OddQ v1.0.6 Review Guide
 
 This is the shortest review path for the local-only OddQ MVP.
 
 ## What ships
 
-The release contains exactly 24 runtime Lua/data files under
+The release contains exactly 29 runtime Lua/data files under
 `Ashita/addons/oddq`:
 
 ```text
 oddq.lua
+command_spine.lua
 guidance_state.lua
 objective_catalog.lua
 local_filesystem.lua
@@ -20,6 +21,7 @@ warp_home.lua
 progression_triggers.lua
 packet_state/readers.lua
 ui/guide_browser.lua
+ui/crystal_pointer.lua
 ui/imgui_text.lua
 ui/main_window.lua
 ui/rank10_popup.lua
@@ -29,12 +31,16 @@ ui/window_state.lua
 ui/step_pointer.lua
 data/objectives.lua
 data/exp_camps.lua
+data/hp_crystal_model.lua
 data/npc_finder.lua
 data/mount_zones.lua
+data/zone_approaches.lua
+data/zone_exit_routes.lua
 data/zone_names.lua
 ```
 
-`oddq.lua` owns Ashita events and `/odd` command routing.
+`oddq.lua` owns Ashita events and command dispatch. `command_spine.lua` owns the
+durable `/odd` command definitions and aliases.
 `ui/main_window.lua` owns the one movable, resizable window that switches
 between Browser and Guide. `ui/route_window.lua` renders the current step,
 conditional Warp/No SG/HP route selector, and Previous/Next controls.
@@ -110,7 +116,7 @@ Run this checklist manually in an approved environment:
 
 ## Release artifact
 
-The release zip should contain the installable 24-file
+The release zip should contain the installable 29-file
 `Ashita/addons/oddq` tree plus release notes, a file manifest, and
 `SHA256SUMS.txt`. It should not contain development caches, private paths,
 captures, credentials, executables, or unrelated projects.
@@ -122,7 +128,7 @@ alongside the addon.
 ## Evidence boundary
 
 Offline tests and layout probes establish source and package contracts. They do
-not establish live-client UX. v1.0.5 makes no automated CatsEyeXI-window test
+not establish live-client UX. v1.0.6 makes no automated CatsEyeXI-window test
 claim; the player-facing checklist above remains a manual review step.
 
 Release UI screenshots must be direct in-game captures supplied or explicitly approved by the product owner.

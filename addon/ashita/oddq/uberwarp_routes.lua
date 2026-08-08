@@ -3,6 +3,9 @@ local uberwarp_routes = {}
 local cache = nil
 local cache_index = nil
 local STAGE_ARRIVAL_RADIUS = 12
+-- Treat the bridge's second warp/loading screen as 70 yalms of route cost.
+-- A nearby HP should still win when it avoids a materially longer SG walk.
+local EXTRA_WARP_LEG_COST = 70
 
 local function position(row)
     local x = tonumber(row.posx)
@@ -53,6 +56,16 @@ end
 
 local function command_alias(alias)
     return tostring(alias or ""):gsub("(%D)(%d+)$", "%1 %2")
+end
+
+local function canonical_destination_alias(alias)
+    return tostring(alias or ""):lower():gsub("%s+", ""):gsub("1$", "")
+end
+
+local function destination_alias_matches(actual, preferred)
+    preferred = tostring(preferred or "")
+    return preferred == ""
+        or canonical_destination_alias(actual) == canonical_destination_alias(preferred)
 end
 
 local function display_name(row)
@@ -188,8 +201,8 @@ function uberwarp_routes.plan(current_zone, current_position, target_zone, targe
     for _, source in ipairs(index.by_zone[current_zone] or {}) do
         local destinations = (index.by_method_zone[source.method] or {})[target_zone] or {}
         for _, destination in ipairs(destinations) do
-            local preferred = tostring(preferred_destination_alias or "")
-            if destination ~= source and (preferred == "" or destination.alias == preferred) then
+            if destination ~= source
+                and destination_alias_matches(destination.alias, preferred_destination_alias) then
                 local cost = distance(current_position, source.position) + distance(destination.position, target_position)
                 if direct == nil or cost < direct.cost then
                     direct = route(source, destination, cost)
@@ -197,8 +210,6 @@ function uberwarp_routes.plan(current_zone, current_position, target_zone, targe
             end
         end
     end
-    if direct ~= nil then return direct end
-
     -- Uberwarp cannot change service types in one command. When the source zone
     -- only has an HP and the destination only has an SG (or vice versa), route
     -- through a zone that has both and return the first command. The pointer is
@@ -212,11 +223,17 @@ function uberwarp_routes.plan(current_zone, current_position, target_zone, targe
                         local final_destinations =
                             (index.by_method_zone[bridge_source.method] or {})[target_zone] or {}
                         for _, final_destination in ipairs(final_destinations) do
-                            local cost = distance(current_position, source.position)
-                                + distance(first_destination.position, bridge_source.position)
-                                + distance(final_destination.position, target_position)
-                            if bridge == nil or cost < bridge.cost then
-                                bridge = route(source, first_destination, cost)
+                            if destination_alias_matches(
+                                final_destination.alias,
+                                preferred_destination_alias
+                            ) then
+                                local cost = distance(current_position, source.position)
+                                    + distance(first_destination.position, bridge_source.position)
+                                    + distance(final_destination.position, target_position)
+                                    + EXTRA_WARP_LEG_COST
+                                if bridge == nil or cost < bridge.cost then
+                                    bridge = route(source, first_destination, cost)
+                                end
                             end
                         end
                     end
@@ -224,7 +241,9 @@ function uberwarp_routes.plan(current_zone, current_position, target_zone, targe
             end
         end
     end
-    return bridge
+    if direct == nil then return bridge end
+    if bridge == nil then return direct end
+    return bridge.cost < direct.cost and bridge or direct
 end
 
 return uberwarp_routes

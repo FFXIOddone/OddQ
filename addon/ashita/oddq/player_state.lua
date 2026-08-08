@@ -2,6 +2,8 @@ local player_state = {}
 
 local PI = math.pi
 local TWO_PI = PI * 2
+local D3DTS_VIEW = 2
+local d3d_ok, d3d = pcall(require, "d3d8")
 local MOUNTED_EFFECT_ID = 252
 local CUTSCENE_STATUS_ID = 4
 local key_item_id_cache = {}
@@ -59,6 +61,46 @@ local function oddq_heading(yaw)
         return nil
     end
     return normalize_angle(raw + (PI / 2))
+end
+
+local function atan2(y, x)
+    if math.atan2 ~= nil then
+        return math.atan2(y, x)
+    end
+    return math.atan(y, x)
+end
+
+local function read_camera_heading()
+    if not d3d_ok or type(d3d) ~= "table" or type(d3d.get_device) ~= "function" then
+        return nil
+    end
+    local device = safe_call(function()
+        return d3d.get_device()
+    end)
+    if device == nil or type(device.GetTransform) ~= "function" then
+        return nil
+    end
+    local ok, result, matrix = pcall(function()
+        return device:GetTransform(D3DTS_VIEW)
+    end)
+    if not ok then
+        return nil
+    end
+    -- Ashita's D3D8 wrapper returns HRESULT, matrix. Accept a direct matrix as
+    -- well so this remains compatible with lightweight test/runtime wrappers.
+    if matrix == nil and type(result) ~= "number" then
+        matrix = result
+    end
+    if matrix == nil then
+        return nil
+    end
+    local forward_x = tonumber(matrix._13)
+    local forward_z = tonumber(matrix._33)
+    if forward_x == nil or forward_z == nil
+        or math.sqrt((forward_x * forward_x) + (forward_z * forward_z)) <= 0.000001 then
+        return nil
+    end
+    return normalize_angle(atan2(forward_x, forward_z))
 end
 
 -- Ashita exposes local position as X/Y/Z where planar travel uses X/Y. OddQ's
@@ -280,6 +322,8 @@ function player_state.current_live_context(fallback)
             or fallback.current_heading_yaw
             or fallback.current_yaw
             or fallback.yaw,
+        current_camera_heading_yaw = read_camera_heading()
+            or fallback.current_camera_heading_yaw,
         current_map_id = fallback.current_map_id or fallback.map_id or fallback.map_index or fallback.map_page,
         current_map_label = fallback.current_map_label
             or fallback.current_map_name

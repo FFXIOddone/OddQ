@@ -1,6 +1,6 @@
 # CatsEyeXI Runtime Profile
 
-OddQ v1.0.5 uses one CatsEyeXI profile: a local Ashita addon with bundled guide
+OddQ v1.0.6 uses one CatsEyeXI profile: a local Ashita addon with bundled guide
 data. There are no hosted endpoints, replacement keys, allowlists, bridge
 settings, backend services, or server changes to configure.
 
@@ -10,7 +10,7 @@ settings, backend services, or server changes to configure.
 Ashita/addons/oddq
 ```
 
-The 24-file addon is loaded with `/addon load oddq` and controlled through
+The 29-file addon is loaded with `/addon load oddq` and controlled through
 `/odd`. It does not install an executable, DLL, Windows service, scheduled task,
 or server module.
 
@@ -36,7 +36,7 @@ persist the player's rank.
 
 - Confirm `LICENSE` and `NOTICE.md` accompany any CatsEyeXI redistribution.
 - Confirm corresponding OddQ source is available and modified copies identify changes.
-- Confirm the archive's 24-file addon tree matches `MANIFEST.json` and
+- Confirm the archive's 29-file addon tree matches `MANIFEST.json` and
   `SHA256SUMS.txt`.
 - Confirm no network, bridge, backend, updater, or telemetry module is shipped.
 - Confirm no packet mutation API is referenced and every outgoing command is a
@@ -71,5 +71,5 @@ The complete attribution and third-party boundary is in `NOTICE.md`.
 
 Source scans, Lua syntax checks, unit tests, layout probes, and archive checks
 are offline evidence. They do not prove live-client UI behavior. CatsEyeXI
-window interaction is not automated for v1.0.5; in-game review is manual and must
+window interaction is not automated for v1.0.6; in-game review is manual and must
 be performed only by an authorized tester.

@@ -698,22 +698,30 @@ return {
     name = "Windurst Mission 1-2: The Heart of the Matter",
     objective_id = "objective:catseyexi.mission.windurst_1_2.start",
   }, {
-    detail = "Talk to Apururu in the Windurst Woods Manustery (H-9) for the Manustery ring.",
+    detail = "Use Windurst Woods Home Point #1, enter the northern Manustery at (H-9), and talk to Apururu for the Manustery ring.",
     kind = "offers",
     name = "Windurst Mission 8-2: The Jester Who'd Be King",
     objective_id = "objective:catseyexi.mission.windurst_8_2.start",
   }, {
-    detail = "Return to Apururu in Windurst Woods after collecting all three ministry rings.",
+    detail = "After collecting the Manustery, Aurastery, Rhinostery, and Optistery rings, return to Apururu in the Windurst Woods Manustery (H-9).",
     kind = "offers",
     name = "Windurst Mission 8-2: The Jester Who'd Be King",
     objective_id = "objective:catseyexi.mission.windurst_8_2.start",
+    search_terms = {"Manustery ring", "Aurastery ring", "Rhinostery ring", "Optistery ring"},
   }, {
-    detail = "Return to Apururu in Windurst Woods (H-9).",
+    detail = "Return to Apururu in the Windurst Woods Manustery (H-9) with the Orastery ring.",
     kind = "offers",
     name = "Windurst Mission 8-2: The Jester Who'd Be King",
     objective_id = "objective:catseyexi.mission.windurst_8_2.start",
+    search_terms = {"Orastery ring"},
   }, {
-    detail = "Return to Apururu in Windurst Woods (H-9) to reach Rank 9.",
+    detail = "Return to Apururu in the Windurst Woods Manustery (H-9) with the Glove of perpetual twilight.",
+    kind = "offers",
+    name = "Windurst Mission 8-2: The Jester Who'd Be King",
+    objective_id = "objective:catseyexi.mission.windurst_8_2.start",
+    search_terms = {"Glove of perpetual twilight"},
+  }, {
+    detail = "Return to Apururu in the Windurst Woods Manustery (H-9) to complete the mission, receive 80,000 gil, and reach Rank 9.",
     kind = "offers",
     name = "Windurst Mission 8-2: The Jester Who'd Be King",
     objective_id = "objective:catseyexi.mission.windurst_8_2.start",
@@ -734,7 +742,7 @@ return {
     objective_id = "objective:catseyexi.mission.windurst_9_1.start",
   }},
     verification_status = "script_verified",
-    service_count = 9,
+    service_count = 10,
   },
   {
     id = "npc_service:231:arachagnon",
@@ -4466,11 +4474,6 @@ return {
   }, {
     detail = "Get the mission from Janshura-Rashura, the recommended Windurstian Gate Guard, in Port Windurst (B-5); select this guide's mission title.",
     kind = "offers",
-    name = "Windurst Mission 5-1: The Final Seal",
-    objective_id = "objective:catseyexi.mission.windurst_5_1.start",
-  }, {
-    detail = "Get the mission from Janshura-Rashura, the recommended Windurstian Gate Guard, in Port Windurst (B-5); select this guide's mission title.",
-    kind = "offers",
     name = "Windurst Mission 5-2: The Shadow Awaits",
     objective_id = "objective:catseyexi.mission.windurst_5_2.start",
   }, {
@@ -4515,7 +4518,7 @@ return {
     objective_id = "objective:catseyexi.mission.windurst_9_2.start",
   }},
     verification_status = "script_verified",
-    service_count = 16,
+    service_count = 15,
   },
   {
     id = "npc_service:252:jaucribaix",
@@ -4561,7 +4564,7 @@ return {
     z = 145.422,
   },
     services = {{
-    detail = "Talk to Kaa Toru the Just inside the Judgment Door to receive the Holy One's oath, then return to Door: Vestal Chamber.",
+    detail = "Talk to Kaa Toru the Just inside the Judgment Door to receive the Holy One's oath.",
     kind = "offers",
     name = "Windurst Mission 6-2: Saintly Invitation",
     objective_id = "objective:catseyexi.mission.windurst_6_2.start",
@@ -5208,7 +5211,7 @@ return {
     name = "Windurst Mission 3-1: To Each His Own Right",
     objective_id = "objective:catseyexi.mission.windurst_3_1.start",
   }, {
-    detail = "Talk to Kupipi in Heavens Tower (H-7).",
+    detail = "Inside mapless Heavens Tower, talk to Kupipi on the main floor for the Orastery investigation cutscene.",
     kind = "offers",
     name = "Windurst Mission 8-2: The Jester Who'd Be King",
     objective_id = "objective:catseyexi.mission.windurst_8_2.start",
@@ -5726,11 +5729,6 @@ return {
   }, {
     detail = "Get the mission from Malduc, the recommended Bastokan Gate Guard, in the Metalworks (J-8); select this guide's mission title.",
     kind = "offers",
-    name = "Bastok Mission 5-1: Darkness Rising",
-    objective_id = "objective:catseyexi.mission.bastok_5_1.start",
-  }, {
-    detail = "Get the mission from Malduc, the recommended Bastokan Gate Guard, in the Metalworks (J-8); select this guide's mission title.",
-    kind = "offers",
     name = "Bastok Mission 5-2: Xarcabard, Land of Truths",
     objective_id = "objective:catseyexi.mission.bastok_5_2.start",
   }, {
@@ -5775,7 +5773,7 @@ return {
     objective_id = "objective:catseyexi.mission.bastok_9_2.start",
   }},
     verification_status = "script_verified",
-    service_count = 21,
+    service_count = 20,
   },
   {
     id = "npc_service:50:malfud",
@@ -6799,7 +6797,7 @@ return {
     objective_id = "objective:catseyexi.mission.bastok_2_3.start",
     search_terms = {"Kindred report"},
   }, {
-    detail = "Speak to Naji for a cutscene, and to receive the New Fei'Yin seal.",
+    detail = "Talk to Naji in the Metalworks (J-8) to accept Darkness Rising and receive the New Fei'Yin seal.",
     kind = "offers",
     name = "Bastok Mission 5-1: Darkness Rising",
     objective_id = "objective:catseyexi.mission.bastok_5_1.start",
@@ -8490,7 +8488,7 @@ return {
     name = "Windurst Mission 8-1: Vain",
     objective_id = "objective:catseyexi.mission.windurst_8_1.start",
   }, {
-    detail = "Talk to Sedal-Godjal in Davoi (J-8) for the Aurastery ring.",
+    detail = "Talk to Sedal-Godjal in the hidden Davoi room at (J-8) for the Aurastery ring.",
     kind = "offers",
     name = "Windurst Mission 8-2: The Jester Who'd Be King",
     objective_id = "objective:catseyexi.mission.windurst_8_2.start",
@@ -8553,7 +8551,7 @@ return {
     z = 113.606,
   },
     services = {{
-    detail = "Talk to Shantotto in Windurst Walls (K-7) for the Glove of perpetual twilight.",
+    detail = "Talk to Shantotto at Windurst Walls (K-7) until the correct cutscene gives the Glove of perpetual twilight.",
     kind = "offers",
     name = "Windurst Mission 8-2: The Jester Who'd Be King",
     objective_id = "objective:catseyexi.mission.windurst_8_2.start",
@@ -9527,7 +9525,7 @@ return {
     name = "Windurst Mission 7-1: The Sixth Ministry",
     objective_id = "objective:catseyexi.mission.windurst_7_1.start",
   }, {
-    detail = "Talk to Tosuka-Porika in Windurst Waters (G-8) for the Optistery ring.",
+    detail = "Use Windurst Waters North Home Point #1, enter the eastern Optistery at (G-8), and talk to Tosuka-Porika for the Optistery ring.",
     kind = "offers",
     name = "Windurst Mission 8-2: The Jester Who'd Be King",
     objective_id = "objective:catseyexi.mission.windurst_8_2.start",

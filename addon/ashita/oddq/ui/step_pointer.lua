@@ -4,7 +4,22 @@ local imgui_text = require("ui/imgui_text")
 local skin = require("ui/skin")
 local window_state = require("ui/window_state")
 local uberwarp_routes = require("uberwarp_routes")
+local crystal_pointer = require("ui/crystal_pointer")
 local mount_zones = require("data/mount_zones")
+local zone_approaches = require("data/zone_approaches")
+local zone_exit_routes = require("data/zone_exit_routes")
+
+local ZONE_EXIT_REVERSE = {}
+for from_zone, exits in pairs(zone_exit_routes) do
+    for _, exit in ipairs(exits or {}) do
+        local to_zone = tonumber(exit.to_zone_id)
+        if to_zone ~= nil then
+            ZONE_EXIT_REVERSE[to_zone] = ZONE_EXIT_REVERSE[to_zone] or {}
+            ZONE_EXIT_REVERSE[to_zone][#ZONE_EXIT_REVERSE[to_zone] + 1] = tonumber(from_zone)
+        end
+    end
+end
+local ZONE_HOPS_CACHE = {}
 
 local PI = math.pi
 local TWO_PI = PI * 2
@@ -288,18 +303,104 @@ local function spatial_distance(a, b)
     return math.sqrt((dx * dx) + (dy * dy) + (dz * dz))
 end
 
+local function zone_hops_to(target_zone)
+    if ZONE_HOPS_CACHE[target_zone] ~= nil then return ZONE_HOPS_CACHE[target_zone] end
+    local hops, queue, head = { [target_zone] = 0 }, { target_zone }, 1
+    while head <= #queue do
+        local zone = queue[head]
+        head = head + 1
+        for _, previous in ipairs(ZONE_EXIT_REVERSE[zone] or {}) do
+            if previous ~= nil and hops[previous] == nil then
+                hops[previous] = hops[zone] + 1
+                queue[#queue + 1] = previous
+            end
+        end
+    end
+    ZONE_HOPS_CACHE[target_zone] = hops
+    return hops
+end
+
+local function select_zone_exit(current_zone, target_zone, current)
+    current_zone = tonumber(current_zone)
+    target_zone = tonumber(target_zone)
+    if current_zone == nil or target_zone == nil or current_zone == target_zone then return nil end
+
+    local hops = zone_hops_to(target_zone)
+
+    local selected, selected_hops, selected_distance = nil, nil, nil
+    for _, exit in ipairs(zone_exit_routes[current_zone] or {}) do
+        local position = copy_position(exit.position)
+        local remaining = hops[tonumber(exit.to_zone_id)]
+        if position ~= nil and remaining ~= nil then
+            local walking = spatial_distance(current, position)
+            if selected == nil
+                or remaining < selected_hops
+                or (remaining == selected_hops and walking < selected_distance) then
+                selected, selected_hops, selected_distance = position, remaining, walking
+                selected.to_zone_id = tonumber(exit.to_zone_id)
+                selected.object_name = tostring(exit.object_name or "Zone Exit")
+                selected.position_kind = "exact_target"
+            end
+        end
+    end
+    if selected == nil then
+        for _, exit in ipairs(zone_exit_routes[current_zone] or {}) do
+            local position = copy_position(exit.position)
+            if position ~= nil then
+                local walking = spatial_distance(current, position)
+                if selected == nil or walking < selected_distance then
+                    selected, selected_distance = position, walking
+                    selected.to_zone_id = tonumber(exit.to_zone_id)
+                    selected.object_name = tostring(exit.object_name or "Zone Exit")
+                    selected.position_kind = "exact_target"
+                end
+            end
+        end
+    end
+    return selected
+end
+
+local function select_zone_approach(target_zone, candidates)
+    local approaches = zone_approaches[tonumber(target_zone)] or {}
+    if #approaches == 0 then return nil end
+    if #approaches == 1 then return approaches[1] end
+    local selected, selected_cost = approaches[1], nil
+    for _, approach in ipairs(approaches) do
+        local arrival = copy_position(approach.arrival_position)
+        if arrival ~= nil then
+            for _, candidate in ipairs(candidates or {}) do
+                local cost = spatial_distance(arrival, candidate)
+                if selected_cost == nil or cost < selected_cost then
+                    selected, selected_cost = approach, cost
+                end
+            end
+        end
+    end
+    return selected
+end
+
 local function arrow_vector(current, target, heading)
     local dx = target.x - current.x
+    -- OddQ stores the live vertical axis in y, opposite the player-facing
+    -- screen cue: lower raw y is above the player.
+    local display_dy = -((target.y or 0) - (current.y or 0))
     local dz = target.z - current.z
     local horizontal_distance = math.sqrt((dx * dx) + (dz * dz))
     local distance = spatial_distance(current, target)
+    local vertical_ratio = distance > 0.000001 and display_dy / distance or 0
     if horizontal_distance <= 0.000001 then
-        return { x = 0, y = 0 }, distance
+        return { x = 0, y = -1 }, { x = 0, y = vertical_ratio, z = 0 }, distance
     end
     local relative = normalize_angle(atan2(dx, dz) - heading)
-    return {
+    local horizontal_ratio = horizontal_distance / distance
+    local vector = {
         x = math.sin(relative),
         y = -math.cos(relative),
+    }
+    return vector, {
+        x = vector.x * horizontal_ratio,
+        y = vertical_ratio,
+        z = -vector.y * horizontal_ratio,
     }, distance
 end
 
@@ -335,8 +436,19 @@ function step_pointer.build(objective, guidance, live_context)
     local live = type(live_context) == "table" and live_context or {}
     local target_zone = tonumber((step or {}).zone_id)
     local current_zone = tonumber(live.current_zone_id)
+    local default_approach = select_zone_approach(target_zone, candidates)
     local preferred_warp_zone = tonumber((step or {}).preferred_warp_zone_id)
+        or tonumber((default_approach or {}).zone_id)
     local preferred_warp_position = copy_position((step or {}).preferred_warp_position)
+        or copy_position((default_approach or {}).position)
+    local preferred_warp_destination_alias = tostring(
+        (step or {}).preferred_warp_destination_alias or ""
+    )
+    if preferred_warp_destination_alias == "" then
+        preferred_warp_destination_alias = tostring(
+            (default_approach or {}).preferred_warp_destination_alias or ""
+        )
+    end
     local using_warp_approach = target_zone ~= nil
         and current_zone ~= nil
         and target_zone ~= current_zone
@@ -351,7 +463,11 @@ function step_pointer.build(objective, guidance, live_context)
     end
 
     local current = copy_position(live.current_position)
-    local heading = tonumber(live.current_heading_yaw)
+    -- The crystal is a screen-space cue, so camera heading is the correct
+    -- reference whenever Ashita can expose it. Character heading remains the
+    -- fail-safe fallback for clients where the view transform is unavailable.
+    local heading = tonumber(live.current_camera_heading_yaw)
+        or tonumber(live.current_heading_yaw)
     if current == nil or heading == nil then
         return { available = false, reason = "live_direction_unavailable" }
     end
@@ -421,7 +537,7 @@ function step_pointer.build(objective, guidance, live_context)
                     route_target_zone,
                     route_candidate,
                     nil,
-                    step.preferred_warp_destination_alias
+                    preferred_warp_destination_alias
                 )
                 if route_target_zone ~= current_zone then
                     candidate_warp = planned_warp
@@ -440,16 +556,17 @@ function step_pointer.build(objective, guidance, live_context)
     end
     if target == nil then
         if target_zone ~= nil and current_zone ~= nil and target_zone ~= current_zone then
-            return {
-                available = false,
-                reason = "loading_next_zone",
-                target_zone_id = target_zone,
-            }
+            target = select_zone_exit(current_zone, target_zone, current)
+            if target ~= nil then
+                best_cost = spatial_distance(current, target)
+            end
         end
+    end
+    if target == nil then
         return { available = false, reason = "route_data_unavailable" }
     end
     if warp ~= nil then target = warp.source.position end
-    local vector, distance = arrow_vector(current, target, heading)
+    local vector, vector_3d, distance = arrow_vector(current, target, heading)
     return {
         available = true,
         step_index = index,
@@ -460,6 +577,7 @@ function step_pointer.build(objective, guidance, live_context)
         target = target,
         target_zone_id = local_transit ~= nil and current_zone
             or using_warp_approach and preferred_warp_zone
+            or target.to_zone_id ~= nil and current_zone
             or target_zone,
         current = current,
         distance = distance,
@@ -471,6 +589,7 @@ function step_pointer.build(objective, guidance, live_context)
         ),
         position_label_character_limit = POSITION_LABEL_CHARACTER_LIMIT,
         pointer_vector = vector,
+        pointer_vector_3d = vector_3d,
         warp_command = warp and warp.command or nil,
         source_label = warp and warp.source_label or nil,
         destination_label = warp and warp.destination_label or nil,
@@ -481,14 +600,8 @@ function step_pointer.build(objective, guidance, live_context)
         ) or nil,
         warp_available = warp ~= nil and distance <= WARP_USE_RANGE_YALMS,
         uses_local_transit = local_transit ~= nil,
+        uses_zone_exit_fallback = target.to_zone_id ~= nil,
     }
-end
-
-local function color_u32(imgui, color)
-    if imgui.GetColorU32 ~= nil then
-        return imgui.GetColorU32(color)
-    end
-    return color
 end
 
 local function draw_arrow(imgui, cue)
@@ -496,28 +609,13 @@ local function draw_arrow(imgui, cue)
         return false
     end
     local draw = imgui.GetWindowDrawList()
-    if draw == nil or draw.AddLine == nil or draw.AddTriangleFilled == nil then
+    if draw == nil or draw.AddTriangleFilled == nil then
         return false
     end
 
     local x, y = imgui.GetCursorScreenPos()
     local center = { x + 34, y + 34 }
-    local forward = cue.pointer_vector
-    local right = { x = -forward.y, y = forward.x }
-    local function point(along, across)
-        return {
-            center[1] + (forward.x * along) + (right.x * across),
-            center[2] + (forward.y * along) + (right.y * across),
-        }
-    end
-
-    draw:AddLine(point(-22, 0), point(4, 0), color_u32(imgui, skin.colors.blue), 10)
-    draw:AddTriangleFilled(
-        point(28, 0),
-        point(-2, -15),
-        point(-2, 15),
-        color_u32(imgui, skin.colors.blue_highlight)
-    )
+    crystal_pointer.draw(imgui, draw, center, cue)
     if imgui.Dummy ~= nil then
         imgui.Dummy({ 72, 68 })
     end
@@ -612,7 +710,6 @@ function step_pointer.render(imgui, objective, guidance, live_context, on_action
                 step_pointer_suppressed = "Follow the only exit.",
                 live_position_unavailable = "Waiting for POS.",
                 live_direction_unavailable = "Waiting for heading.",
-                loading_next_zone = "Loading next zone.",
                 route_data_unavailable = "Route data unavailable.",
             }
             local message = messages[cue.reason] or "Open a guide with POS."

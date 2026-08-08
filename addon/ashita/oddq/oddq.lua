@@ -1,6 +1,6 @@
 addon.name = "oddq"
 addon.author = "Odd"
-addon.version = "1.0.5"
+addon.version = "1.0.6"
 addon.desc = "Local quest and mission guide browser."
 
 require("common")
@@ -17,6 +17,7 @@ local rank10_popup = require("ui/rank10_popup")
 local step_pointer = require("ui/step_pointer")
 local warp_home = require("warp_home")
 local progression_triggers = require("progression_triggers")
+local command_spine = require("command_spine")
 
 local imgui_ok, imgui = pcall(require, "imgui")
 if not imgui_ok then
@@ -34,35 +35,6 @@ local oddq = {
     progression_step_key = nil,
     rank10_milestone = rank10_milestone.new_state(),
     next_rank_poll = 0,
-}
-
-local category_modes = {
-    catseye = { category = "catseye", mode = "quests" },
-    mission = { category = "missions", mode = "missions" },
-    missions = { category = "missions", mode = "missions" },
-    m = { category = "missions", mode = "missions" },
-    job = { category = "jobs", mode = "jobs" },
-    jobs = { category = "jobs", mode = "jobs" },
-    j = { category = "jobs", mode = "jobs" },
-    quest = { category = "quests", mode = "quests" },
-    quests = { category = "quests", mode = "quests" },
-    q = { category = "quests", mode = "quests" },
-    exp = { category = "exp_solo", mode = "exp" },
-    camp = { category = "exp_solo", mode = "exp" },
-    camps = { category = "exp_solo", mode = "exp" },
-    solo = { category = "exp_solo", mode = "exp" },
-    trust = { category = "exp_solo", mode = "exp" },
-    trusts = { category = "exp_solo", mode = "exp" },
-    ["6man"] = { category = "exp_6man", mode = "exp" },
-    sixman = { category = "exp_6man", mode = "exp" },
-    party = { category = "exp_6man", mode = "exp" },
-    mageburn = { category = "exp_mageburn", mode = "exp" },
-    manaburn = { category = "exp_mageburn", mode = "exp" },
-    meleeburn = { category = "exp_meleeburn", mode = "exp" },
-    petburn = { category = "exp_meleeburn", mode = "exp" },
-    npc = { category = "npcs", mode = "npcs" },
-    npcs = { category = "npcs", mode = "npcs" },
-    finder = { category = "npcs", mode = "npcs" },
 }
 
 local handle_command
@@ -523,16 +495,9 @@ local function move_current_guide(delta)
 end
 
 local function print_help()
-    print("OddQ help")
-    print("/odd - open the guide browser")
-    print("/odd <search> - load the best matching local guide")
-    print("/odd missions|quests|jobs|npcs - browse a guide category")
-    print("/odd solo|6man|mageburn|meleeburn - browse an EXP camp category")
-    print("/odd next|previous - move through the loaded guide")
-    print("/odd cancel - cancel the loaded guide and clear its resume state")
-    print("/odd route warp|no-warp - choose instructions for your teleport unlocks")
-    print("/odd status - print the current step")
-    print("/odd close - close OddQ")
+    for _, line in ipairs(command_spine.help_lines()) do
+        print(line)
+    end
 end
 
 local function render_ui()
@@ -622,8 +587,8 @@ local function render_ui()
 end
 
 local function handle_plan_command(args)
-    local mode = normalize_mode(args[2])
-    local query_start = mode ~= nil and 3 or 2
+    local mode = normalize_mode(args[1])
+    local query_start = mode ~= nil and 2 or 1
     local query = join_args(args, query_start)
     if query == "" then
         open_browser(mode)
@@ -633,51 +598,30 @@ local function handle_plan_command(args)
 end
 
 local function handle_browse_command(args)
-    local category_spec = category_modes[trim(args[2]):lower()]
-    local mode = category_spec and category_spec.mode or normalize_mode(args[2])
+    local category_spec = command_spine.resolve({ args[1] })
+    if category_spec.handler ~= "category" then category_spec = nil end
+    local mode = category_spec and category_spec.mode or normalize_mode(args[1])
     local category = category_spec and category_spec.category or nil
-    local query_start = (category_spec ~= nil or mode ~= nil) and 3 or 2
+    local query_start = (category_spec ~= nil or mode ~= nil) and 2 or 1
     open_browser(mode, join_args(args, query_start), category)
 end
 
-function handle_command(args)
-    args = args or {}
-    local command = trim(args[1]):lower()
+local command_handlers = {}
 
-    if command == "" or command == "open" or command == "menu" or command == "welcome" then
+command_handlers.open = function()
         open_browser(nil, nil, "catseye")
-        return
-    end
-    if command == "close" then
+end
+command_handlers.close = function()
         oddq.guidance.main_window_open = false
         oddq.visible = false
-        return
-    end
-    if command == "cancel" then
-        cancel_guide()
-        return
-    end
-    if command == "back" then
-        open_browser()
-        return
-    end
-    if command == "status" or command == "where" or command == "current" then
-        print_status()
-        return
-    end
-    if command == "next" then
-        move_current_guide(1)
-        return
-    end
-    if command == "previous" or command == "prev" then
-        move_current_guide(-1)
-        return
-    end
-    if command == "route" or command == "route-mode" then
-        select_route_mode(args[2])
-        return
-    end
-    if command == "warp-home" then
+end
+command_handlers.cancel = cancel_guide
+command_handlers.back = function() open_browser() end
+command_handlers.status = print_status
+command_handlers.next = function() move_current_guide(1) end
+command_handlers.previous = function() move_current_guide(-1) end
+command_handlers.route = function(resolved) select_route_mode(resolved.args[1]) end
+command_handlers.warp_home = function()
         local objective = current_guidance_objective()
         local step = type(objective) == "table" and type(objective.steps) == "table"
             and objective.steps[tonumber(oddq.guidance.guide_step_tab_index) or 1] or nil
@@ -690,37 +634,29 @@ function handle_command(args)
                 chat:QueueCommand(-1, queued)
             end
         end
-        return
-    end
-    if command == "help" then
-        print_help()
-        return
-    end
-    if command == "plan" then
-        handle_plan_command(args)
-        return
-    end
-    if command == "list" or command == "browse" or command == "catalog" then
-        handle_browse_command(args)
-        return
-    end
-    if command == "find" or command == "search" or command == "load" or command == "go" then
-        load_query(join_args(args, 2), nil)
-        return
-    end
-
-    local category_spec = category_modes[command]
-    if category_spec ~= nil then
-        local query = join_args(args, 2)
+end
+command_handlers.help = print_help
+command_handlers.plan = function(resolved) handle_plan_command(resolved.args) end
+command_handlers.browse = function(resolved) handle_browse_command(resolved.args) end
+command_handlers.find = function(resolved) load_query(join_args(resolved.args, 1), nil) end
+command_handlers.category = function(resolved)
+        local query = join_args(resolved.args, 1)
         if query == "" then
-            open_browser(category_spec.mode, nil, category_spec.category)
+            open_browser(resolved.mode, nil, resolved.category)
         else
-            load_query(query, category_spec.mode)
+            load_query(query, resolved.mode)
         end
+end
+command_handlers.search = function(resolved) load_query(join_args(resolved.args, 1), nil) end
+
+function handle_command(args)
+    local resolved = command_spine.resolve(args)
+    local handler = command_handlers[resolved.handler]
+    if handler == nil then
+        print("OddQ command is unavailable: " .. tostring(resolved.name or "unknown"))
         return
     end
-
-    load_query(join_args(args, 1), nil)
+    handler(resolved)
 end
 
 local function parse_command_line(command_line)
