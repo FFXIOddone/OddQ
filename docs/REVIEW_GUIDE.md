@@ -1,14 +1,15 @@
-# OddQ v1.0.6 Review Guide
+# OddQ v1.0.7 Review Guide
 
-This is the shortest review path for the local-only OddQ MVP.
+This is the shortest review path for the guidance-only OddQ MVP.
 
 ## What ships
 
-The release contains exactly 29 runtime Lua/data files under
+Future releases contain exactly 42 runtime Lua/data files under
 `Ashita/addons/oddq`:
 
 ```text
 oddq.lua
+update_checker.lua
 command_spine.lua
 guidance_state.lua
 objective_catalog.lua
@@ -19,6 +20,7 @@ route_steps.lua
 uberwarp_routes.lua
 warp_home.lua
 progression_triggers.lua
+config/update.lua
 packet_state/readers.lua
 ui/guide_browser.lua
 ui/crystal_pointer.lua
@@ -29,6 +31,17 @@ ui/route_window.lua
 ui/skin.lua
 ui/window_state.lua
 ui/step_pointer.lua
+data/items.lua
+data/items_001.lua
+data/items_002.lua
+data/items_003.lua
+data/items_004.lua
+data/items_005.lua
+data/items_006.lua
+data/items_007.lua
+data/items_008.lua
+data/items_009.lua
+data/items_010.lua
 data/objectives.lua
 data/exp_camps.lua
 data/hp_crystal_model.lua
@@ -46,8 +59,9 @@ between Browser and Guide. `ui/route_window.lua` renders the current step,
 conditional Warp/No SG/HP route selector, and Previous/Next controls.
 
 There is no Settings popup, bridge, backend, service, helper executable,
-updater, outgoing packet mutator, or server component. The shipped packet reader
-is receive-only and returns copied declared fields.
+automatic installer, outgoing packet mutator, or server component. The passive
+update checker only notifies the user about a newer public release. The shipped
+packet reader is receive-only and returns copied declared fields.
 
 ## Runtime review
 
@@ -58,7 +72,7 @@ Review these properties directly in the shipped Lua tree:
    `/mount "Raptor"` while unmounted in a CatsEye mount-capable zone, or exactly
    `/dismount` while mounted. An explicitly authored Warp Home button may send
    `/item`, or `/equip`, `/wait`, `/item`, for the selected ready warp item.
-2. No network client or endpoint is loaded by the addon.
+2. The only external network endpoint is the fixed public OddQ GitHub latest-release API; it is checked once per session for notification only.
 3. The D3D-present handler renders bundled local guide data and reads local
    zone, position, heading, rank, mounted status, plus only the current step's named
    item/key-item evidence.
@@ -90,8 +104,9 @@ Run this checklist manually in an approved environment:
 
 1. Load with `/addon load oddq` and open with `/odd`.
 2. Confirm Browser and Guide reuse the same `OddQ` window.
-3. Move and resize the window; confirm it remains usable from 480x320 through
-   its content-bounded 820x560 maximum.
+3. Move and resize the window. Confirm the Browser defaults to 820x620, the
+   Guide defaults to 820x560, and saved sizes remain bounded by 820x540 and
+   1000x760.
 4. Search for a quest, mission, or job guide. Confirm its result row shows
    `ACE / CW / WeW`, with supported modes blue, unavailable modes white, and
    both `/` separators white. Load it and use Previous/Next.
@@ -102,21 +117,27 @@ Run this checklist manually in an approved environment:
 8. Load an EXP guide and confirm **Travel**, **Targets**, and **Safety** each appear exactly once.
    Confirm its browser row shows level, style, and zone
    without `1 steps` or `Starts at: EXP Parties` filler.
-9. Confirm the Step Pointer remains visible, shows only the selected step, and
+9. Select **Items** between **NPC Finder** and **EXP Camps**. Confirm an exact
+   item name or numeric ID opens source-backed details and only an exact
+   merchant location offers a temporary pointer.
+10. With no guide active, paste an `(X, Y)` pair and a verified grid such as
+    `(E-5)` into **Custom Pointer**. Confirm ambiguous multi-map grids fail
+    closed unless `Map N` is supplied.
+11. Confirm the Step Pointer remains visible, shows only the selected step, and
    points to its current destination.
-10. Confirm **Warp** appears only within range of the selected HP/Survival Guide
+12. Confirm **Warp** appears only within range of the selected HP/Survival Guide
     and sends the displayed Uberwarp destination when clicked.
-11. In a mount-capable field, confirm **Mount** appears only while unmounted and
+13. In a mount-capable field, confirm **Mount** appears only while unmounted and
     calls Raptor; while mounted, confirm it changes to **Dismount**. Confirm no
     **Mount** button appears in a city or dungeon.
-12. On an explicitly authored progression step, confirm only the named item,
+14. On an explicitly authored progression step, confirm only the named item,
     key item, zone, or cutscene evidence advances the guide.
-13. On an explicitly authored Warp Home step, confirm the button prefers Instant
+15. On an explicitly authored Warp Home step, confirm the button prefers Instant
     Warp, then a ready Warp Ring, then Ducal Guard's Ring.
 
 ## Release artifact
 
-The release zip should contain the installable 29-file
+The release zip should contain the installable 42-file
 `Ashita/addons/oddq` tree plus release notes, a file manifest, and
 `SHA256SUMS.txt`. It should not contain development caches, private paths,
 captures, credentials, executables, or unrelated projects.
@@ -128,7 +149,7 @@ alongside the addon.
 ## Evidence boundary
 
 Offline tests and layout probes establish source and package contracts. They do
-not establish live-client UX. v1.0.6 makes no automated CatsEyeXI-window test
+not establish live-client UX. v1.0.7 makes no automated CatsEyeXI-window test
 claim; the player-facing checklist above remains a manual review step.
 
 Release UI screenshots must be direct in-game captures supplied or explicitly approved by the product owner.

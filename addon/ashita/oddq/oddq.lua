@@ -1,7 +1,8 @@
 addon.name = "oddq"
 addon.author = "Odd"
-addon.version = "1.0.6"
+addon.version = "1.0.7"
 addon.desc = "Local quest and mission guide browser."
+addon.link = "https://github.com/FFXIOddone/OddQ/releases/latest"
 
 require("common")
 
@@ -18,6 +19,8 @@ local step_pointer = require("ui/step_pointer")
 local warp_home = require("warp_home")
 local progression_triggers = require("progression_triggers")
 local command_spine = require("command_spine")
+local update_checker = require("update_checker")
+local update_config = require("config/update")
 
 local imgui_ok, imgui = pcall(require, "imgui")
 if not imgui_ok then
@@ -28,6 +31,8 @@ local oddq = {
     visible = false,
     guidance = guidance_state.new(),
     tracked_objective = nil,
+    item_route_objective = nil,
+    custom_pointer_objective = nil,
     progression_state = progression_triggers.new_state(),
     next_progress_poll = 0,
     cutscene_event_id = nil,
@@ -35,6 +40,7 @@ local oddq = {
     progression_step_key = nil,
     rank10_milestone = rank10_milestone.new_state(),
     next_rank_poll = 0,
+    update_check = update_checker.new_state(),
 }
 
 local handle_command
@@ -160,6 +166,176 @@ local function current_guidance_objective()
     return route_steps.project(oddq.tracked_objective, oddq.guidance.route_mode)
 end
 
+local function clear_item_route()
+    oddq.item_route_objective = nil
+    oddq.guidance.item_route_source_id = ""
+end
+
+local function clear_custom_pointer()
+    oddq.custom_pointer_objective = nil
+    oddq.guidance.custom_pointer_input = ""
+    oddq.guidance.custom_pointer_error = ""
+    oddq.guidance.custom_pointer_active = false
+    oddq.guidance.custom_pointer_count = 0
+end
+
+local function clear_transient_pointers()
+    clear_item_route()
+    clear_custom_pointer()
+end
+
+local MAX_CUSTOM_POINTER_POSITIONS = 32
+local COORDINATE_COMPONENT = "([%+%-]?[%d%.]+)"
+
+local function finite_coordinate(value)
+    value = tonumber(value)
+    if value == nil or value ~= value or value == math.huge or value == -math.huge then
+        return nil
+    end
+    return value
+end
+
+local function format_coordinate(value)
+    if value == 0 then value = 0 end
+    local formatted = string.format("%.3f", value)
+    formatted = formatted:gsub("0+$", ""):gsub("%.$", "")
+    return formatted
+end
+
+local function parse_custom_targets(raw)
+    local text = trim(raw)
+    if text == "" then
+        return nil, "Paste coordinates like (-54.4, -21.5) or a grid like (E-5)."
+    end
+
+    local targets, seen = {}, {}
+    local function append_target(key, value)
+        if seen[key] == true then
+            return true
+        end
+        if #targets >= MAX_CUSTOM_POINTER_POSITIONS then
+            return false, "Paste at most 32 locations."
+        end
+        seen[key] = true
+        targets[#targets + 1] = value
+        return true
+    end
+    local function append_coordinate(first, second)
+        local x = finite_coordinate(first)
+        local z = finite_coordinate(second)
+        if x == nil or z == nil then
+            return false, "Coordinates must be finite numbers."
+        end
+        return append_target(string.format("xy:%.6f|%.6f", x, z), {
+            kind = "coordinate",
+            x = x,
+            z = z,
+            position_label = "X/Y(" .. format_coordinate(x) .. "," .. format_coordinate(z) .. ")",
+        })
+    end
+    local function canonical_grid(column, row_text)
+        column = tostring(column or ""):upper()
+        local row = tonumber(row_text)
+        if #column ~= 1 or column < "A" or column > "P"
+            or row == nil or row < 1 or row > 16 or row ~= math.floor(row) then
+            return nil
+        end
+        return column .. "-" .. tostring(row)
+    end
+    local function looks_like_grid_candidate(value)
+        local compact = tostring(value or ""):upper():gsub("%s+", "")
+        return compact:match("^[A-Z][A-Z]?%-[%+%-]?%d*$") ~= nil
+            or compact:match("^%d+%-[A-Z]+$") ~= nil
+            or compact:match("^[A-Z/]+%-[%+%-]?%d+$") ~= nil
+            or compact:match("^[A-Z]%-%d+/.+$") ~= nil
+    end
+    local function append_grid(column, row_text, map_id)
+        local grid = canonical_grid(column, row_text)
+        map_id = tonumber(map_id)
+        if grid == nil or (map_id ~= nil and (map_id < 1 or map_id ~= math.floor(map_id))) then
+            return false, "Grid locations use columns A-P and rows 1-16, like (E-5)."
+        end
+        return append_target("grid:" .. tostring(map_id or "*") .. ":" .. grid, {
+            kind = "grid",
+            grid = grid,
+            map_id = map_id,
+            position_label = "(" .. grid .. ")",
+        })
+    end
+
+    local explicit_grids = {}
+    for map_text, column, row_text in text:gmatch(
+        "[Mm][Aa][Pp]%s*(%d+)%s*%(%s*([%a]+)%s*%-%s*([%+%-]?%d+)%s*%)"
+    ) do
+        local grid = canonical_grid(column, row_text)
+        local ok, message = append_grid(column, row_text, map_text)
+        if not ok then return nil, message end
+        if grid ~= nil then explicit_grids[grid] = true end
+    end
+
+    for inner in text:gmatch("%(([^()]*)%)") do
+        local column, row_text = inner:match("^%s*([%a]+)%s*%-%s*([%+%-]?%d+)%s*$")
+        if column ~= nil then
+            local grid = canonical_grid(column, row_text)
+            if grid == nil then
+                return nil, "Grid locations use columns A-P and rows 1-16, like (E-5)."
+            end
+            if explicit_grids[grid] ~= true then
+                local ok, message = append_grid(column, row_text, nil)
+                if not ok then return nil, message end
+            end
+        elseif looks_like_grid_candidate(inner) then
+            return nil, "Grid locations use columns A-P and rows 1-16, like (E-5)."
+        end
+    end
+
+    local tuple_pattern = "%(%s*" .. COORDINATE_COMPONENT
+        .. "%s*,%s*" .. COORDINATE_COMPONENT .. "%s*%)"
+    for first, second in text:gmatch(tuple_pattern) do
+        local ok, message = append_coordinate(first, second)
+        if not ok then return nil, message end
+    end
+
+    if #targets == 0 then
+        local map_text, column, row_text = text:match(
+            "^%s*[Mm][Aa][Pp]%s*(%d+)%s+([%a]+)%s*%-%s*([%+%-]?%d+)%s*$"
+        )
+        if map_text ~= nil then
+            local ok, message = append_grid(column, row_text, map_text)
+            if not ok then return nil, message end
+        else
+            column, row_text = text:match("^%s*([%a]+)%s*%-%s*([%+%-]?%d+)%s*$")
+            if column ~= nil then
+                local ok, message = append_grid(column, row_text, nil)
+                if not ok then return nil, message end
+            end
+        end
+    end
+
+    if #targets == 0 then
+        local first, second = text:match(
+            "^%s*" .. COORDINATE_COMPONENT .. "%s*,%s*" .. COORDINATE_COMPONENT .. "%s*$"
+        )
+        if first == nil then
+            first, second = text:match(
+                "^%s*[Xx]%s*[:=]%s*" .. COORDINATE_COMPONENT
+                    .. "%s*[Yy]%s*[:=]%s*" .. COORDINATE_COMPONENT .. "%s*$"
+            )
+        end
+        if first == nil then
+            first, second = text:match(
+                "^%s*" .. COORDINATE_COMPONENT .. "%s+" .. COORDINATE_COMPONENT .. "%s*$"
+            )
+        end
+        if first == nil then
+            return nil, "Paste (X, Y) coordinates or a grid like (E-5)."
+        end
+        local ok, message = append_coordinate(first, second)
+        if not ok then return nil, message end
+    end
+    return targets
+end
+
 local function normalize_mode(value)
     return objective_catalog.normalize_mode(value)
 end
@@ -168,7 +344,7 @@ local function category_for_mode(mode)
     if mode == "exp" then
         return "exp_solo"
     end
-    if mode == "missions" or mode == "jobs" or mode == "quests" or mode == "npcs" then
+    if mode == "missions" or mode == "jobs" or mode == "quests" or mode == "npcs" or mode == "items" then
         return mode
     end
     return "catseye"
@@ -180,6 +356,7 @@ local function open_browser(mode, query, category)
     oddq.visible = true
     if category ~= nil then
         oddq.guidance.guide_browser_category = category
+        oddq.guidance.guide_browser_item_id = ""
     elseif mode ~= nil then
         oddq.guidance.guide_browser_category = category_for_mode(mode)
     end
@@ -187,6 +364,7 @@ local function open_browser(mode, query, category)
         oddq.guidance.guide_browser_query = query
         oddq.guidance.guide_browser_page = 1
         oddq.guidance.guide_browser_selected_index = 1
+        oddq.guidance.guide_browser_item_id = ""
     end
 end
 
@@ -219,6 +397,7 @@ local function load_local_catalog_guide(entry)
         print("OddQ could not build that local guide.")
         return false
     end
+    clear_transient_pointers()
 
     objective.quest_name = trim(objective.quest_name) ~= "" and objective.quest_name or entry.name
     objective.objective_kind = trim(objective.objective_kind) ~= "" and objective.objective_kind or entry.kind
@@ -230,6 +409,7 @@ local function load_local_catalog_guide(entry)
     local steps = (current_guidance_objective() or {}).steps
     oddq.guidance.guide_step_tab_index = type(steps) == "table" and #steps > 0 and 1 or 0
     guidance_state.reset_step_transition(oddq.guidance)
+    guidance_state.reset_step_proximity(oddq.guidance)
     open_guide()
     print("odd guide loaded: " .. entry_label(entry))
     return true
@@ -246,10 +426,12 @@ local function current_resume_state()
     local steps = (current_guidance_objective() or {}).steps or {}
     local step = math.floor(tonumber(oddq.guidance.guide_step_tab_index) or 1)
     step = math.max(1, math.min(step, math.max(1, #steps)))
+    local step_id = trim(type(steps[step]) == "table" and steps[step].step_id or "")
     local main_view = oddq.guidance.main_view == "guide" and "guide" or "browse"
     return {
         objective_id = objective_id,
         step = step,
+        step_id = step_id,
         route_mode = route_steps.normalize_mode(oddq.guidance.route_mode),
         main_view = main_view,
         main_window_open = oddq.guidance.main_window_open == true,
@@ -263,6 +445,7 @@ local function resume_state_document(state)
         "version=1",
         "objective_id=" .. state.objective_id,
         "step=" .. tostring(state.step),
+        "step_id=" .. tostring(state.step_id or ""),
         "route_mode=" .. state.route_mode,
         "main_view=" .. state.main_view,
         "main_window_open=" .. (state.main_window_open and "true" or "false"),
@@ -312,6 +495,15 @@ local function restore_resume_state()
     oddq.guidance.route_mode = route_steps.normalize_mode(state.route_mode)
     local steps = (current_guidance_objective() or {}).steps or {}
     local step = math.floor(tonumber(state.step) or 1)
+    local saved_step_id = trim(state.step_id)
+    if saved_step_id ~= "" then
+        for index, candidate in ipairs(steps) do
+            if trim(type(candidate) == "table" and candidate.step_id or "") == saved_step_id then
+                step = index
+                break
+            end
+        end
+    end
     oddq.guidance.guide_step_tab_index = math.max(1, math.min(step, math.max(1, #steps)))
     oddq.guidance.main_view = state.main_view == "guide" and "guide" or "browse"
     oddq.guidance.main_window_open = state.main_window_open == "true"
@@ -324,16 +516,21 @@ local function restore_resume_state()
         )
     end
     guidance_state.reset_step_transition(oddq.guidance)
+    guidance_state.reset_step_proximity(oddq.guidance)
     resume_state_signature = resume_state_document(current_resume_state())
     return true
 end
 
 local function cancel_guide()
     local had_guide = oddq.tracked_objective ~= nil
+    local had_custom_pointer = oddq.custom_pointer_objective ~= nil
+    local had_item_pointer = oddq.item_route_objective ~= nil
     oddq.tracked_objective = nil
+    clear_transient_pointers()
     oddq.guidance.guide_step_tab_index = 0
     oddq.guidance.warp_home_action = nil
     guidance_state.reset_step_transition(oddq.guidance)
+    guidance_state.reset_step_proximity(oddq.guidance)
     oddq.progression_state = progression_triggers.new_state()
     oddq.progression_step_key = nil
     oddq.next_progress_poll = 0
@@ -345,6 +542,10 @@ local function cancel_guide()
     open_browser()
     if had_guide then
         print("OddQ guide canceled.")
+    elseif had_custom_pointer then
+        print("OddQ custom pointer cleared.")
+    elseif had_item_pointer then
+        print("OddQ item-source pointer cleared.")
     end
     if not resume_removed then
         print("OddQ could not remove the saved guide state; check config/addons/oddq/resume-state.txt.")
@@ -363,11 +564,237 @@ local function find_entry(query, mode)
     return objective_catalog.search(query, mode, 1)[1]
 end
 
+local function open_item_detail(item)
+    if type(item) ~= "table" then return false end
+    clear_item_route()
+    open_browser("items", safe_text(item.name), "items")
+    oddq.guidance.guide_browser_item_id = safe_text(item.id)
+    print("OddQ opened item: " .. safe_text(item.name)
+        .. " (ID " .. tostring(math.floor(tonumber(item.item_id) or 0)) .. ").")
+    return true
+end
+
+local function point_to_item_source(item_id, source_index)
+    local item = objective_catalog.find_item_by_id(item_id)
+    local index = math.floor(tonumber(source_index) or 0)
+    local route = objective_catalog.item_source_route(item, index)
+    local source = type(item) == "table" and type(item.sources) == "table"
+        and item.sources[index] or nil
+    if item == nil or route == nil or type(source) ~= "table" then
+        print("OddQ: that item source has no verified exact pointer route.")
+        return false
+    end
+
+    clear_custom_pointer()
+
+    local step = {
+        step_id = "reach_item_source",
+        step_kind = "travel",
+        zone_id = route.zone_id,
+        target_name = route.target_name,
+        map_grid = route.map_grid,
+        position = {
+            x = route.position.x,
+            y = route.position.y,
+            z = route.position.z,
+        },
+        instruction = "Follow the pointer to " .. route.target_name
+            .. " for " .. safe_text(item.name) .. ".",
+        required_items = {},
+        required_key_items = {},
+        notes = {},
+    }
+    if source.kind == "gil_shop" or source.kind == "guild_shop" then
+        step.npc_name = route.target_name
+        step.position.npc_name = route.target_name
+    elseif source.kind == "drop" then
+        step.mob_name = route.target_name
+    end
+    oddq.item_route_objective = {
+        objective_id = "item_route:" .. safe_text(item.id) .. ":" .. tostring(index),
+        objective_kind = "item_route",
+        quest_name = "Item source: " .. safe_text(item.name),
+        transient = true,
+        steps = { step },
+    }
+    oddq.guidance.item_route_source_id = safe_text(item.id) .. ":" .. tostring(index)
+    open_browser("items", safe_text(item.name), "items")
+    oddq.guidance.guide_browser_item_id = safe_text(item.id)
+    print("OddQ pointer set to " .. route.target_name .. " for " .. safe_text(item.name) .. ".")
+    return true
+end
+
+local function handle_item_command(args)
+    local action = trim((args or {})[1]):lower()
+    if action == "route" then
+        point_to_item_source(args[2], args[3])
+        return
+    end
+    if action == "clear-route" then
+        clear_item_route()
+        print("OddQ item pointer cleared.")
+        return
+    end
+    clear_item_route()
+    open_browser("items", join_args(args, 1), "items")
+end
+
+local function set_custom_pointer(raw)
+    raw = trim(raw)
+    oddq.guidance.custom_pointer_input = raw
+    local function reject(message)
+        if oddq.custom_pointer_objective ~= nil then
+            message = tostring(message) .. " Previous custom pointer remains active."
+        end
+        oddq.guidance.custom_pointer_error = message
+        print("OddQ: " .. message)
+        return false
+    end
+    if oddq.tracked_objective ~= nil then
+        return reject("Cancel the active guide before setting a custom pointer.")
+    end
+
+    local parsed, parse_error = parse_custom_targets(raw)
+    if parsed == nil then
+        return reject(parse_error)
+    end
+
+    local ok, live = pcall(player_state.current_live_context)
+    live = ok and type(live) == "table" and live or {}
+    local zone_id = tonumber(live.current_zone_id)
+    local current_map_id = tonumber(live.current_map_id or live.map_id or live.map_index or live.map_page)
+    local current = type(live.current_position) == "table" and live.current_position or nil
+    local elevation = type(current) == "table" and tonumber(current.y or current.Y) or nil
+    if zone_id == nil or zone_id <= 0 or elevation == nil then
+        return reject("Waiting for your current zone and position.")
+    end
+
+    local positions, seen_positions = {}, {}
+    local pointer_map_id = nil
+    local function append_position(position)
+        local map_id = tonumber(position.map_id)
+        local key = table.concat({
+            tostring(map_id or "*"),
+            string.format("%.6f", tonumber(position.x) or 0),
+            string.format("%.6f", tonumber(position.z) or 0),
+            tostring(position.position_label or ""),
+        }, "|")
+        if seen_positions[key] ~= true then
+            if #positions >= MAX_CUSTOM_POINTER_POSITIONS then
+                return false
+            end
+            seen_positions[key] = true
+            positions[#positions + 1] = position
+        end
+        return true
+    end
+    for _, target in ipairs(parsed) do
+        if target.kind == "grid" then
+            local requested_map_id = tonumber(target.map_id) or current_map_id
+            local anchors, resolution = objective_catalog.grid_anchors(zone_id, requested_map_id, target.grid)
+            resolution = type(resolution) == "table" and resolution or {}
+            if anchors == nil then
+                if resolution.reason == "ambiguous_map" then
+                    return reject("This zone has " .. target.grid
+                        .. " on multiple maps; use Map N (" .. target.grid .. ").")
+                end
+                local map_label = requested_map_id ~= nil and ("Map " .. tostring(requested_map_id) .. " ") or ""
+                return reject("OddQ has no verified " .. map_label .. "(" .. target.grid
+                    .. ") pointer reference in this zone.")
+            end
+            local resolved_map_id = tonumber(resolution.map_id)
+            if pointer_map_id ~= nil and resolved_map_id ~= pointer_map_id then
+                return reject("All grid locations in one pointer must use the same map.")
+            end
+            pointer_map_id = pointer_map_id or resolved_map_id
+            for _, anchor in ipairs(anchors) do
+                if not append_position({
+                    x = anchor.x,
+                    y = elevation,
+                    z = anchor.z,
+                    map_id = resolved_map_id,
+                    map_grid = target.grid,
+                    position_kind = "map_grid_anchor",
+                    position_label = "(" .. target.grid .. ")",
+                }) then
+                    return reject("A custom pointer can contain at most 32 verified locations.")
+                end
+            end
+        else
+            if not append_position({
+                x = target.x,
+                y = elevation,
+                z = target.z,
+                position_kind = "custom_coordinate",
+                position_label = target.position_label,
+            }) then
+                return reject("A custom pointer can contain at most 32 verified locations.")
+            end
+        end
+    end
+    if #positions == 0 then
+        return reject("OddQ could not resolve any verified pointer locations.")
+    end
+    local count = #positions
+    local step = {
+        step_id = "custom_coordinate",
+        step_kind = "travel",
+        zone_id = zone_id,
+        position = positions[1],
+        positions = positions,
+        position_kind = "custom_coordinate",
+        pointer_planar_only = true,
+        pointer_current_zone_only = true,
+        pointer_current_map_only = pointer_map_id ~= nil,
+        target_map_id = pointer_map_id,
+        target_map_label = pointer_map_id ~= nil and ("Map " .. tostring(pointer_map_id)) or nil,
+        warp_suppressed = true,
+        instruction = count == 1 and "Follow the pointer to the custom location."
+            or "Follow the pointer to the nearest custom location.",
+        required_items = {},
+        required_key_items = {},
+        notes = {},
+    }
+
+    clear_item_route()
+    oddq.custom_pointer_objective = {
+        objective_id = "custom_pointer:" .. tostring(zone_id) .. ":" .. tostring(pointer_map_id or "any"),
+        objective_kind = "custom_pointer",
+        quest_name = "Custom Pointer",
+        transient = true,
+        steps = { step },
+    }
+    oddq.guidance.custom_pointer_input = raw
+    oddq.guidance.custom_pointer_error = ""
+    oddq.guidance.custom_pointer_active = true
+    oddq.guidance.custom_pointer_count = count
+    open_browser()
+    print(count == 1 and "OddQ custom pointer set."
+        or ("OddQ custom pointer set to the nearest of " .. tostring(count) .. " locations."))
+    return true
+end
+
+local function handle_pointer_command(args)
+    local raw = join_args(args, 1)
+    if trim(raw):lower() == "clear" then
+        clear_custom_pointer()
+        print("OddQ custom pointer cleared.")
+        return
+    end
+    set_custom_pointer(raw)
+end
+
 local function load_query(query, mode)
     query = trim(query)
     if query == "" then
         open_browser(mode)
         return false
+    end
+    if mode == nil then
+        local exact_item = objective_catalog.find_exact_item(query)
+        if exact_item ~= nil then
+            return open_item_detail(exact_item)
+        end
     end
     local entry = find_entry(query, mode)
     if entry == nil then
@@ -426,17 +853,18 @@ local function move_guide_step(delta)
     local objective = current_guidance_objective()
     local steps = type(objective) == "table" and objective.steps or nil
     if type(steps) ~= "table" or #steps == 0 then
-        return false
+        return false, "no_steps"
     end
     local selected = math.floor(tonumber(oddq.guidance.guide_step_tab_index) or 1)
     selected = math.max(1, math.min(selected, #steps))
-    local next_selected = selected + delta
-    if next_selected < 1 or next_selected > #steps then
-        return false
+    local next_selected, reason = route_steps.move_phase_index(objective, selected, delta)
+    if next_selected == nil then
+        return false, reason
     end
     oddq.guidance.guide_step_tab_index = next_selected
     guidance_state.reset_step_transition(oddq.guidance)
-    return true
+    guidance_state.reset_step_proximity(oddq.guidance)
+    return true, nil
 end
 
 local function select_route_mode(value)
@@ -463,6 +891,7 @@ local function select_route_mode(value)
     )
     oddq.guidance.route_mode = raw
     guidance_state.reset_step_transition(oddq.guidance)
+    guidance_state.reset_step_proximity(oddq.guidance)
     print(raw == "WARP" and "OddQ is using the Warp route." or "OddQ is using the No SG/HP route.")
     return true
 end
@@ -484,20 +913,45 @@ local function move_mission_guide(delta)
 end
 
 local function move_current_guide(delta)
-    if move_guide_step(delta) then
+    local moved, reason = move_guide_step(delta)
+    if moved then
         print_status()
+        return
+    end
+    if reason == "phase_in_progress" then
+        print("OddQ: follow the pointer to finish this guide phase before advancing.")
         return
     end
     if move_mission_guide(delta) then
         return
     end
-    print(delta > 0 and "OddQ is at the last step." or "OddQ is at the first step.")
+    print(delta > 0 and "OddQ is at the last guide phase." or "OddQ is at the first guide phase.")
 end
 
 local function print_help()
     for _, line in ipairs(command_spine.help_lines()) do
         print(line)
     end
+end
+
+local function announce_pointer_advance(objective, previous_index, next_index)
+    if type(objective) ~= "table" then
+        return
+    end
+    local _, previous_phase, phase_count = route_steps.guide_projection(objective, previous_index)
+    local _, next_phase, _, phase = route_steps.guide_projection(objective, next_index)
+    if type(objective.guide_phases) == "table" and #objective.guide_phases > 0 then
+        if previous_phase == next_phase then
+            return
+        end
+        local title = trim(type(phase) == "table" and phase.title or "")
+        local suffix = title ~= "" and (": " .. title) or "."
+        print("OddQ advanced to phase " .. tostring(next_phase)
+            .. " of " .. tostring(phase_count) .. suffix)
+        return
+    end
+    print("OddQ advanced to step " .. tostring(next_index)
+        .. " of " .. tostring(#(objective.steps or {})) .. ".")
 end
 
 local function render_ui()
@@ -533,18 +987,42 @@ local function render_ui()
         cutscene_event_id = oddq.cutscene_event_id,
         cutscene_zone_id = oddq.cutscene_zone_id,
     })
-    local advanced, step_index = guidance_state.observe_step_zone_transition(
-        oddq.guidance,
-        current_guidance_objective(),
-        (live_context or {}).current_zone_id
-    )
+    local custom_step = type(oddq.custom_pointer_objective) == "table"
+        and type(oddq.custom_pointer_objective.steps) == "table"
+        and oddq.custom_pointer_objective.steps[1] or nil
+    local custom_zone = tonumber(type(custom_step) == "table" and custom_step.zone_id or nil)
+    local custom_map = tonumber(type(custom_step) == "table" and custom_step.target_map_id or nil)
+    local live_zone = tonumber((live_context or {}).current_zone_id)
+    local live_map = tonumber((live_context or {}).current_map_id
+        or (live_context or {}).map_id
+        or (live_context or {}).map_index
+        or (live_context or {}).map_page)
+    if custom_zone ~= nil and custom_zone > 0
+        and live_zone ~= nil and live_zone > 0 and custom_zone ~= live_zone then
+        clear_custom_pointer()
+        print("OddQ custom pointer cleared after changing zones.")
+    elseif type(custom_step) == "table" and custom_step.pointer_current_map_only == true
+        and custom_map ~= nil and live_map ~= nil and custom_map ~= live_map then
+        clear_custom_pointer()
+        print("OddQ custom pointer cleared after changing maps.")
+    end
+    local previous_index = selected
+    local progression_paused = oddq.item_route_objective ~= nil
+        or oddq.custom_pointer_objective ~= nil
+    local advanced, step_index = false, nil
+    if not progression_paused then
+        advanced, step_index = guidance_state.observe_step_zone_transition(
+            oddq.guidance,
+            objective,
+            (live_context or {}).current_zone_id
+        )
+    end
     if advanced then
-        local steps = (current_guidance_objective() or {}).steps or {}
-        print("OddQ advanced to step " .. tostring(step_index) .. " of " .. tostring(#steps) .. ".")
+        announce_pointer_advance(objective, previous_index, step_index)
     end
 
     now = os.clock()
-    if not advanced and now >= (oddq.next_progress_poll or 0) then
+    if not progression_paused and not advanced and now >= (oddq.next_progress_poll or 0) then
         oddq.next_progress_poll = now + 0.5
         local events = progression_triggers.observe_live(oddq.progression_state, live_context)
         local progress_advanced, progress_step = guidance_state.advance_for_progress_events(
@@ -554,7 +1032,22 @@ local function render_ui()
             progression_triggers.step_completed
         )
         if progress_advanced then
-            print("OddQ advanced to step " .. tostring(progress_step) .. " of " .. tostring(#(objective.steps or {})) .. ".")
+            advanced = true
+            step_index = progress_step
+            announce_pointer_advance(objective, previous_index, progress_step)
+        end
+    end
+
+    if not progression_paused and not advanced then
+        local proximity_advanced, proximity_step = guidance_state.observe_step_proximity(
+            oddq.guidance,
+            objective,
+            live_context
+        )
+        if proximity_advanced then
+            advanced = true
+            step_index = proximity_step
+            announce_pointer_advance(objective, previous_index, proximity_step)
         end
     end
 
@@ -569,8 +1062,17 @@ local function render_ui()
         main_window.render(imgui, oddq.guidance, objective, function(args)
             handle_command(args or {})
         end)
-        objective = current_guidance_objective()
-        step_pointer.render(imgui, objective, oddq.guidance, live_context, function(command)
+        objective = oddq.item_route_objective
+            or oddq.custom_pointer_objective
+            or current_guidance_objective()
+        local pointer_guidance = oddq.guidance
+        if oddq.item_route_objective ~= nil or oddq.custom_pointer_objective ~= nil then
+            pointer_guidance = {
+                guide_step_tab_index = 1,
+                route_mode = oddq.guidance.route_mode,
+            }
+        end
+        step_pointer.render(imgui, objective, pointer_guidance, live_context, function(command)
             local authorized = type(command) == "string" and (
                 command:match("^/uw [hs][pg] ") ~= nil
                 or command == '/mount "Raptor"'
@@ -621,6 +1123,7 @@ command_handlers.status = print_status
 command_handlers.next = function() move_current_guide(1) end
 command_handlers.previous = function() move_current_guide(-1) end
 command_handlers.route = function(resolved) select_route_mode(resolved.args[1]) end
+command_handlers.pointer = function(resolved) handle_pointer_command(resolved.args) end
 command_handlers.warp_home = function()
         local objective = current_guidance_objective()
         local step = type(objective) == "table" and type(objective.steps) == "table"
@@ -641,6 +1144,10 @@ command_handlers.browse = function(resolved) handle_browse_command(resolved.args
 command_handlers.find = function(resolved) load_query(join_args(resolved.args, 1), nil) end
 command_handlers.category = function(resolved)
         local query = join_args(resolved.args, 1)
+        if resolved.category == "items" then
+            handle_item_command(resolved.args)
+            return
+        end
         if query == "" then
             open_browser(resolved.mode, nil, resolved.category)
         else
@@ -700,7 +1207,7 @@ ashita.events.register("packet_in", "oddq_cutscene_capture", function(e)
 end)
 
 ashita.events.register("load", "oddq_load", function()
-    -- ODD_SECURITY_NOTE: local guidance only; receive-only cutscene observation, no packet mutation, networking, movement, targeting, trading, or chat upload.
+    -- ODD_SECURITY_NOTE: local guidance plus one opt-out, read-only GitHub release check; no packet mutation, movement, targeting, trading, or chat upload.
     -- ODD_FILE_WRITE: first-launch marker and validated guide resume state under config/addons/oddq.
     apply_first_launch_state()
     local restored = restore_resume_state()
@@ -713,6 +1220,11 @@ ashita.events.register("load", "oddq_load", function()
         print("OddQ loaded. Guide Browser is open.")
     else
         print("OddQ loaded. Use /odd.")
+    end
+    if update_config.enabled ~= false and ashita.tasks ~= nil and ashita.tasks.once ~= nil then
+        ashita.tasks.once(tonumber(update_config.delay_seconds) or 3, function()
+            update_checker.check(oddq.update_check, addon.version)
+        end)
     end
 end)
 

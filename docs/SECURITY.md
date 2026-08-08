@@ -1,11 +1,11 @@
 # OddQ Security
 
-OddQ v1.0.6 is a local, guidance-only Ashita addon. It is not movement automation
+OddQ v1.0.7 is a local, guidance-only Ashita addon. It is not movement automation
 and does not require a companion process or server component.
 
 ## Runtime boundary
 
-The shipped 29-file addon:
+The 42-file release addon:
 
 - renders a local Guide Browser/Guide window and compact Step Pointer;
 - reads bundled guide data plus the player's local zone, position, heading, rank,
@@ -24,8 +24,9 @@ The shipped 29-file addon:
 The shipped addon does not:
 
 - scan unrelated inventory/key items, chat, credentials, or outgoing packets;
-- ship a Settings popup, bridge, backend, updater, or telemetry client;
-- make network requests;
+- ship a Settings popup, bridge, backend, auto-updater, or telemetry client;
+- make network requests other than one read-only, notification-only HTTPS request
+  to the fixed public OddQ GitHub latest-release API per addon session;
 - inject, mutate, block, or send packets;
 - issue directional movement, targeting, trading, or combat commands;
 - read or upload chat; or

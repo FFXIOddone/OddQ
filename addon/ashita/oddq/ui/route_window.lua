@@ -1,6 +1,7 @@
 local route_window = {}
 local imgui_text = require("ui/imgui_text")
 local skin = require("ui/skin")
+local route_steps = require("route_steps")
 local objective_catalog_loaded, objective_catalog = pcall(require, "objective_catalog")
 if not objective_catalog_loaded or type(objective_catalog) ~= "table" then
     objective_catalog = nil
@@ -10,6 +11,7 @@ end
 
 local section_header
 local label_value
+local clamp_step_tab_index
 
 local zone_names_loaded, zone_names = pcall(require, "data/zone_names")
 if not zone_names_loaded then
@@ -35,24 +37,72 @@ end
 
 local function runtime_state(state)
     state = type(state) == "table" and state or {}
-    if objective_catalog == nil
-        or type(objective_catalog.to_runtime_objective) ~= "function"
-        or type(state.objective) ~= "table"
-        or state.objective.has_route_modes == true then
-        return state
+    local objective = state.objective
+    if objective_catalog ~= nil
+        and type(objective_catalog.to_runtime_objective) == "function"
+        and type(objective) == "table"
+        and objective.has_route_modes ~= true then
+        objective = objective_catalog.to_runtime_objective(objective) or objective
     end
 
-    local objective = objective_catalog.to_runtime_objective(state.objective)
-    if objective == nil or objective == state.objective then
-        return state
+    local normalized_state = state
+    if objective ~= state.objective then
+        normalized_state = {}
+        for key, value in pairs(state) do normalized_state[key] = value end
+        normalized_state.objective = objective
+    end
+
+    if type(objective) ~= "table"
+        or type(objective.guide_phases) ~= "table"
+        or #objective.guide_phases == 0 then
+        return normalized_state
+    end
+
+    local pointer_index = math.floor(tonumber(((state or {}).guidance or {}).guide_step_tab_index) or 1)
+    local display_objective, phase_index, phase_count, phase = route_steps.guide_projection(objective, pointer_index)
+    if type(display_objective) ~= "table" then
+        return normalized_state
     end
 
     local projected = {}
-    for key, value in pairs(state) do
+    for key, value in pairs(normalized_state) do
         projected[key] = value
     end
-    projected.objective = objective
+    projected.pointer_objective = objective
+    projected.pointer_step_index = pointer_index
+    projected.guide_phase_index = phase_index
+    projected.guide_phase_count = phase_count
+    projected.guide_phase = phase
+    projected.objective = display_objective
     return projected
+end
+
+local function has_authored_phases(objective)
+    return type(objective) == "table"
+        and type(objective.guide_phases) == "table"
+        and #objective.guide_phases > 0
+end
+
+local function selected_guide_index(state, guidance, max_index)
+    if tonumber((state or {}).guide_phase_index) ~= nil then
+        return math.max(1, math.min(math.floor(tonumber(state.guide_phase_index)), max_index))
+    end
+    return clamp_step_tab_index(guidance, max_index)
+end
+
+local function phase_navigation_ready(state, selected)
+    if tonumber((state or {}).guide_phase_index) == nil then
+        return true
+    end
+    local step = type(((state or {}).objective or {}).steps) == "table"
+        and state.objective.steps[selected] or nil
+    local last_index = tonumber(type(step) == "table" and step.pointer_last_index or nil)
+    local pointer_index = tonumber((state or {}).pointer_step_index)
+    return last_index == nil or pointer_index == nil or pointer_index >= last_index
+end
+
+local function display_progress_prefix(objective)
+    return has_authored_phases(objective) and "Phase" or "Step"
 end
 
 local function format_identifier(value)
@@ -94,7 +144,9 @@ local function objective_label(objective)
 end
 
 function route_window.should_use_step_guide(objective)
-    return type(objective) == "table" and type(objective.steps) == "table" and #objective.steps > 1
+    return type(objective) == "table"
+        and type(objective.steps) == "table"
+        and (#objective.steps > 1 or (has_authored_phases(objective) and #objective.steps > 0))
 end
 
 local function step_label(objective)
@@ -695,6 +747,10 @@ local function step_target_name(step)
 end
 
 local function tab_label_for_step(step, index)
+    local phase_title = safe_text(type(step) == "table" and step.guide_phase_title or nil)
+    if phase_title ~= "" then
+        return tostring(index) .. " " .. phase_title
+    end
     local target_name = step_target_name(step)
     if target_name ~= "" then
         return tostring(index) .. " " .. target_name
@@ -703,7 +759,7 @@ local function tab_label_for_step(step, index)
     return tostring(index) .. " Step"
 end
 
-local function clamp_step_tab_index(guidance, max_index)
+clamp_step_tab_index = function(guidance, max_index)
     if type(guidance) ~= "table" then
         return max_index > 0 and 1 or 0
     end
@@ -891,7 +947,7 @@ local function render_guide_step(imgui, objective, selected, max_index, known, c
     end
 end
 
-local function render_step_navigation(imgui, guidance, objective, selected, max_index, on_command)
+local function render_step_navigation(imgui, state, guidance, objective, selected, max_index, on_command)
     if imgui.Button == nil then
         return
     end
@@ -902,21 +958,24 @@ local function render_step_navigation(imgui, guidance, objective, selected, max_
     local previous_mission = selected == 1 and mission
     local previous_label = previous_mission and "Previous Mission" or "Previous"
     local previous_width_key = previous_mission and "nav_mission_button_width" or "nav_button_width"
-    if skin.button(imgui, previous_label .. "##oddq_guide_prev", previous_enabled and "secondary" or "disabled", detail_button_size("nav_button_height", previous_width_key)) then
-        if selected > 1 then
-            guidance.guide_step_tab_index = selected - 1
-        elseif type(on_command) == "function" then
+    if skin.button(imgui, previous_label .. "##oddq_guide_prev", previous_enabled and "secondary" or "disabled", detail_button_size("nav_button_height", previous_width_key))
+        and previous_enabled then
+        if type(on_command) == "function" then
             on_command({ "previous" })
+        elseif selected > 1 and tonumber((state or {}).guide_phase_index) == nil then
+            guidance.guide_step_tab_index = selected - 1
         end
     end
     detail_same_line(imgui, detail_number("nav_button_gap", 7.0))
-    local next_enabled = selected < max_index or mission
+    local phase_ready = phase_navigation_ready(state, selected)
+    local next_enabled = phase_ready and (selected < max_index or mission)
     local next_label = selected == max_index and mission and "Next Mission" or "Next"
-    if skin.button(imgui, next_label .. "##oddq_guide_next", next_enabled and "primary" or "disabled", detail_button_size("nav_button_height", "nav_button_width")) then
-        if selected < max_index then
-            guidance.guide_step_tab_index = selected + 1
-        elseif type(on_command) == "function" then
+    if skin.button(imgui, next_label .. "##oddq_guide_next", next_enabled and "primary" or "disabled", detail_button_size("nav_button_height", "nav_button_width"))
+        and next_enabled then
+        if type(on_command) == "function" then
             on_command({ "next" })
+        elseif selected < max_index and tonumber((state or {}).guide_phase_index) == nil then
+            guidance.guide_step_tab_index = selected + 1
         end
     end
     local step = type(objective.steps) == "table" and objective.steps[selected] or nil
@@ -972,14 +1031,14 @@ local function render_step_guide(imgui, state, summary, known, on_command)
     if type(objective.steps) == "table" then
         max_index = #objective.steps
     end
-    local selected = clamp_step_tab_index(guidance, max_index)
+    local selected = selected_guide_index(state, guidance, max_index)
     local context = detail_context(imgui)
 
     detail_gap(imgui, detail_number("padding_y", 0.0))
     detail_gap(imgui, detail_number("content_top_gap", 0.0))
     render_route_mode_selector(imgui, guidance, objective, on_command)
     render_guide_step(imgui, objective, selected, max_index, known, context)
-    render_step_navigation(imgui, guidance, objective, selected, max_index, on_command)
+    render_step_navigation(imgui, state, guidance, objective, selected, max_index, on_command)
     detail_gap(imgui, detail_number("content_bottom_gap", 0.0))
 end
 
@@ -1255,7 +1314,8 @@ local function render_objective_cluster(imgui, state, summary, on_command)
     if type(objective.steps) == "table" then
         step_count = #objective.steps
     end
-    local selected = tonumber(guidance.guide_step_tab_index) or 0
+    local selected = tonumber((state or {}).guide_phase_index)
+        or tonumber(guidance.guide_step_tab_index) or 0
     if step_count > 0 and selected < 1 then
         selected = 1
         guidance.guide_step_tab_index = selected
@@ -1304,12 +1364,13 @@ local function render_objective_cluster(imgui, state, summary, on_command)
     end
     local progress = nil
     local progress_label = ""
+    local progress_prefix = display_progress_prefix(objective)
     if step_count == 1 then
         progress = 1
-        progress_label = "Step 1 of 1"
+        progress_label = progress_prefix .. " 1 of 1"
     elseif step_count > 1 and selected > 0 then
         progress = selected / step_count
-        progress_label = "Step " .. tostring(selected) .. " of " .. tostring(step_count)
+        progress_label = progress_prefix .. " " .. tostring(selected) .. " of " .. tostring(step_count)
     end
     if step_guide or objective_kind == "exp_camp" then
         instruction = ""

@@ -120,6 +120,10 @@ local function abbreviated_object_name(name, available)
 end
 
 local function compact_position_label(step, target)
+    local explicit = tostring((target or {}).position_label or (step or {}).position_label or "")
+    if explicit ~= "" then
+        return shorten_to_limit(explicit, POSITION_LABEL_CHARACTER_LIMIT)
+    end
     local grid = compact_grid_label(target)
     if grid == "" then
         grid = compact_grid_label(step)
@@ -191,6 +195,7 @@ local function copy_position(position)
         map_id = tonumber(position.map_id or position.target_map_id),
         map_grid = tostring(position.map_grid or ""),
         position_kind = tostring(position.position_kind or ""),
+        position_label = tostring(position.position_label or ""),
         npc_name = tostring(position.npc_name or ""),
         object_name = tostring(position.object_name or ""),
     }
@@ -436,6 +441,10 @@ function step_pointer.build(objective, guidance, live_context)
     local live = type(live_context) == "table" and live_context or {}
     local target_zone = tonumber((step or {}).zone_id)
     local current_zone = tonumber(live.current_zone_id)
+    if (step or {}).pointer_current_zone_only == true
+        and (target_zone == nil or current_zone == nil or target_zone ~= current_zone) then
+        return { available = false, reason = "custom_pointer_wrong_zone" }
+    end
     local default_approach = select_zone_approach(target_zone, candidates)
     local preferred_warp_zone = tonumber((step or {}).preferred_warp_zone_id)
         or tonumber((default_approach or {}).zone_id)
@@ -470,6 +479,11 @@ function step_pointer.build(objective, guidance, live_context)
         or tonumber(live.current_heading_yaw)
     if current == nil or heading == nil then
         return { available = false, reason = "live_direction_unavailable" }
+    end
+    if (step or {}).pointer_planar_only == true then
+        for _, candidate in ipairs(candidates or {}) do
+            candidate.y = current.y
+        end
     end
     local local_transit = heavens_tower_transit_target(current_zone, current, target_zone, candidates)
     if local_transit ~= nil then
@@ -711,6 +725,7 @@ function step_pointer.render(imgui, objective, guidance, live_context, on_action
                 live_position_unavailable = "Waiting for POS.",
                 live_direction_unavailable = "Waiting for heading.",
                 route_data_unavailable = "Route data unavailable.",
+                custom_pointer_wrong_zone = "Custom pointer is for another zone.",
             }
             local message = messages[cue.reason] or "Open a guide with POS."
             if cue.reason == "target_map_mismatch" then

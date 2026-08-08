@@ -64,6 +64,11 @@ local function route_state(state, objective)
     }
 end
 
+local function no_scrollbar_flags()
+    return (tonumber(_G.ImGuiWindowFlags_NoScrollbar) or 0)
+        + (tonumber(_G.ImGuiWindowFlags_NoScrollWithMouse) or 0)
+end
+
 function main_window.render_state(state, objective)
     state = state or {}
     local view = normalized_view(state, objective)
@@ -79,9 +84,18 @@ function main_window.render_state(state, objective)
             end
         end
     else
-        if has_loaded_guide(objective) then
+        local loaded = has_loaded_guide(objective)
+        if loaded then
             table.insert(lines, "Resume: " .. guide_title(objective))
             table.insert(lines, "Cancel Guide")
+        else
+            table.insert(lines, "Custom Pointer")
+            table.insert(lines, "Paste (X, Y) coordinates or a grid like (E-5).")
+            if safe_text(state.custom_pointer_error) ~= "" then
+                table.insert(lines, safe_text(state.custom_pointer_error))
+            elseif state.custom_pointer_active == true then
+                table.insert(lines, "Custom pointer active for this session")
+            end
         end
         for line in guide_browser.render_state(state):gmatch("[^\n]+") do
             table.insert(lines, line)
@@ -112,7 +126,9 @@ end
 
 local function render_browser(imgui, state, objective, on_command)
     render_resume_strip(imgui, state, objective, on_command)
-    guide_browser.render(imgui, state, on_command)
+    guide_browser.render(imgui, state, on_command, {
+        show_custom_pointer = not has_loaded_guide(objective),
+    })
 end
 
 local function render_guide(imgui, state, objective, on_command)
@@ -135,14 +151,29 @@ function main_window.render(imgui, state, objective, on_command)
     end
 
     local layout = skin.layout.main_window or {}
+    local view = normalized_view(state, objective)
+    local resume_visible = view == "browse" and has_loaded_guide(objective)
     local width = tonumber(layout.width) or 820.0
-    local height = tonumber(layout.height) or 560.0
+    local height = tonumber(layout.height) or 620.0
+    if view == "guide" then
+        height = tonumber(layout.guide_height) or height
+    elseif resume_visible then
+        height = tonumber(layout.browser_resume_height) or height
+    else
+        height = tonumber(layout.browser_height) or height
+    end
     local min_width = math.min(tonumber(layout.min_width) or 480.0, width)
-    local min_height = math.min(tonumber(layout.min_height) or 320.0, height)
+    local min_height = height
     local max_width = math.max(min_width, tonumber(layout.max_width) or width)
     local max_height = math.max(min_height, tonumber(layout.max_height) or height)
     if imgui.SetNextWindowSize ~= nil then
-        imgui.SetNextWindowSize({ width, height }, ImGuiCond_FirstUseEver)
+        local layout_key = view .. (resume_visible and ":resume" or ":plain")
+        local condition = ImGuiCond_FirstUseEver
+        if state._oddq_main_window_layout_key ~= layout_key then
+            condition = tonumber(_G.ImGuiCond_Always) or 0
+            state._oddq_main_window_layout_key = layout_key
+        end
+        imgui.SetNextWindowSize({ width, height }, condition)
     end
     if imgui.SetNextWindowSizeConstraints ~= nil then
         imgui.SetNextWindowSizeConstraints(
@@ -151,13 +182,12 @@ function main_window.render(imgui, state, objective, on_command)
         )
     end
     local pushed = skin.push_window(imgui)
-    local visible, open = window_state.begin(imgui, "OddQ", true, 0)
+    local visible, open = window_state.begin(imgui, "OddQ", true, no_scrollbar_flags())
     if not open then
         state.main_window_open = false
         dispatch_command(on_command, { "close" })
     end
     if visible then
-        local view = normalized_view(state, objective)
         state.main_view = view
         if view == "guide" then
             render_guide(imgui, state, objective, on_command)

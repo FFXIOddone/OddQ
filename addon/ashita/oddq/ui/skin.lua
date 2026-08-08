@@ -98,11 +98,14 @@ skin.layout = {
     },
     main_window = {
         width = 820.0,
-        height = 560.0,
-        min_width = 480.0,
-        min_height = 320.0,
-        max_width = 820.0,
-        max_height = 560.0,
+        height = 620.0,
+        browser_height = 620.0,
+        browser_resume_height = 620.0,
+        guide_height = 560.0,
+        min_width = 820.0,
+        min_height = 540.0,
+        max_width = 1000.0,
+        max_height = 760.0,
         section_gap = 0.0,
         mode_button_gap = 0.0,
         nav_button_gap = 0.0,
@@ -110,11 +113,12 @@ skin.layout = {
         guide_browser = {
             results_width = 764.0,
             preview_width = 32.0,
-            height = 420.0,
+            height = 500.0,
+            custom_pointer_height = 106.0,
             column_gap = 8.0,
             category_gap = 6.0,
             search_width = -1.0,
-            limit = 7.0,
+            limit = 5.0,
         },
     },
     window = {
@@ -356,6 +360,14 @@ local function push_button_style(imgui, variant)
         color = { 0.059, 0.541, 0.862, 0.62 }
     elseif variant == "active" then
         color = { 0.098, 0.858, 1.000, 0.38 }
+    elseif variant == "result" then
+        color = { 0.180, 0.220, 0.240, 0.94 }
+        hovered = { 0.180, 0.520, 0.680, 0.82 }
+        active = { 0.098, 0.858, 1.000, 0.72 }
+    elseif variant == "category" then
+        color = { 0.135, 0.165, 0.185, 0.94 }
+        hovered = { 0.150, 0.410, 0.540, 0.82 }
+        active = { 0.098, 0.858, 1.000, 0.72 }
     elseif variant == "toggle" then
         color = { 0.059, 0.541, 0.862, 0.46 }
     elseif variant == "disabled" then

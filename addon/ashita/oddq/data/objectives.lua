@@ -26317,6 +26317,67 @@ return {
     verification_status = "script_verified",
     game_modes = {"ACE", "CW", "WEW"},
     source_url = "https://www.bg-wiki.com/ffxi/Windurst_Mission_8-2",
+    guide_phases = {{
+    instruction = "Get the mission from Janshura-Rashura, the recommended Windurstian Gate Guard, in Port Windurst (B-5); select this guide's mission title.",
+    phase_id = "step_accept_mission",
+    step_ids = {"accept_mission"},
+    title = "Janshura-Rashura",
+  }, {
+    instruction = "Talk to Apururu for the Manustery ring, then follow the pointer from the Davoi Survival Guide through Monastic Cavern to Sedal-Godjal for the Aurastery ring.",
+    phase_id = "collect_manustery_and_aurastery_rings",
+    step_ids = {"receive_manustery_ring", "warp_to_davoi_sg", "follow_davoi_water_southeast", "follow_davoi_water_j9_bend", "follow_davoi_water_south", "leave_davoi_water_at_j10", "hug_left_from_davoi_water", "hug_left_to_monastic_entrance", "turn_south_to_monastic_entrance", "enter_monastic_cavern_entrance_2", "cross_monastic_right_wall_h10", "descend_monastic_right_wall_h9", "turn_west_monastic_right_wall_g9", "cross_monastic_right_wall_g9", "cross_monastic_right_wall_g8", "cross_monastic_right_wall_h8", "exit_monastic_to_hidden_davoi", "turn_hidden_davoi_east", "turn_hidden_davoi_south", "cross_hidden_davoi_east_corridor", "approach_sedal_godjal", "receive_aurastery_ring"},
+    title = "Collect the Manustery and Aurastery Rings",
+  }, {
+    instruction = "Use Fei'Yin Home Point #2 and follow the Map 2 pointer route to the northwest Cermet Door for the Rhinostery ring.",
+    phase_id = "collect_rhinostery_ring",
+    step_ids = {"warp_to_feiyin_hp2", "cross_feiyin_map_2_i6", "turn_west_feiyin_map_2_i6", "turn_north_feiyin_map_2_h6", "cross_north_feiyin_map_2_h5", "turn_north_feiyin_map_2_h5", "turn_south_feiyin_map_2_h5", "cross_feiyin_map_2_h6_return", "return_south_feiyin_map_2_h6", "cross_west_feiyin_map_2_g6", "turn_north_feiyin_map_2_g6", "loop_north_feiyin_map_2_g5", "cross_west_feiyin_map_2_g5", "approach_feiyin_cermet_door", "receive_rhinostery_ring"},
+    title = "Collect the Rhinostery Ring",
+  }, {
+    instruction = "Collect the Optistery ring from Tosuka-Porika, then report all four rings to Apururu.",
+    phase_id = "complete_first_ring_report",
+    step_ids = {"receive_optistery_ring", "report_rings_to_apururu"},
+    title = "Finish the Four-Ring Report",
+  }, {
+    instruction = "Enter Heavens Tower from Windurst Walls Home Point #1, then talk to Kupipi on the main floor.",
+    phase_id = "receive_orastery_orders",
+    step_ids = {"enter_heavens_tower", "receive_orastery_orders"},
+    title = "Receive the Orastery Investigation",
+  }, {
+    instruction = "Use the West Sarutabaruta Survival Guide, follow the pointer to the (F-4) tower, and pass the first Cracked Wall; press Next only after the map changes to Map 2.",
+    phase_id = "reach_outer_horutoto_map_2",
+    step_ids = {"warp_to_west_saruta_sg", "cross_west_saruta_g5", "cross_west_saruta_f5", "follow_west_saruta_north_trail", "turn_west_to_saruta_tower", "cross_west_saruta_tower_approach", "reach_west_saruta_tower_entry", "enter_west_saruta_tower", "turn_at_outer_horutoto_entrance", "descend_outer_horutoto_map_1", "approach_outer_first_cracked_wall", "pass_outer_first_cracked_wall"},
+    title = "Reach Outer Horutoto Ruins Map 2",
+  }, {
+    instruction = "Follow the Map 2 pointer route to the mission Cracked Wall at (G-8), inspect it once to spawn the two Cardian Queens, then press Next.",
+    phase_id = "open_cardian_cracked_wall",
+    step_ids = {"turn_south_after_outer_first_wall", "enter_outer_horutoto_map_2_corridor", "cross_outer_horutoto_map_2_east_hall", "turn_west_outer_horutoto_map_2_g7", "cross_outer_horutoto_map_2_west_hall", "approach_cardian_cracked_wall", "inspect_cardian_cracked_wall"},
+    title = "Open the Cardian Cracked Wall",
+  }, {
+    instruction = "Defeat both Queen of Swords and Queen of Coins. The pointer snaps to whichever Queen is closer.",
+    phase_id = "step_defeat_cardian_queens",
+    step_ids = {"defeat_cardian_queens"},
+    title = "Queen of Swords / Queen of Coins",
+  }, {
+    instruction = "After both Queens are dead, inspect the same Cracked Wall again until the cutscene gives the Orastery ring.",
+    phase_id = "step_receive_orastery_ring",
+    step_ids = {"receive_orastery_ring"},
+    title = "Cracked Wall",
+  }, {
+    instruction = "Report the Orastery ring to Apururu, collect the Glove of perpetual twilight from Shantotto, then return the glove to Apururu.",
+    phase_id = "deliver_twilight_glove",
+    step_ids = {"report_to_apururu", "receive_twilight_glove", "report_glove_to_apururu"},
+    title = "Deliver the Twilight Glove",
+  }, {
+    instruction = "Use the Toraimarai Canal Survival Guide, backtrack into Inner Horutoto Ruins Map 4, and follow the pointer to inspect the Gate of Darkness.",
+    phase_id = "investigate_gate_of_darkness",
+    step_ids = {"warp_to_toraimarai_canal_sg", "cross_toraimarai_backtrack_corridor", "turn_west_toraimarai_backtrack", "enter_inner_horutoto_map_4", "cross_inner_horutoto_map_4_h5_entry", "descend_inner_horutoto_map_4_h5", "cross_inner_horutoto_map_4_h6", "turn_south_inner_horutoto_map_4_h7", "approach_gate_of_darkness", "inspect_gate_of_darkness"},
+    title = "Investigate the Gate of Darkness",
+  }, {
+    instruction = "Return to Apururu in the Windurst Woods Manustery (H-9) to complete the mission, receive 80,000 gil, and reach Rank 9.",
+    phase_id = "step_complete_mission",
+    step_ids = {"complete_mission"},
+    title = "Apururu",
+  }},
     steps = {{
     auto_advance_events = {{
     event = "cutscene_finished",
@@ -26362,6 +26423,7 @@ return {
     target_map_label = "Map 1",
     zone_id = 241,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Warp to the Davoi Survival Guide at (J-7). This is the supported fast route to Monastic Cavern entrance 2.",
     map_grid = "J-7",
     notes = {"The Davoi Proto-Waypoint is slightly faster if unlocked; the Survival Guide follows the same water route and is directly supported by the pointer."},
@@ -26381,6 +26443,7 @@ return {
     target_name = "Davoi Survival Guide",
     zone_id = 149,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Drop into the water and follow it southeast through (J-8/J-9).",
     map_grid = "J-8/J-9 waterway",
     notes = {},
@@ -26400,6 +26463,7 @@ return {
     warp_suppressed = true,
     zone_id = 149,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Stay in the water as it bends east through (J-9).",
     map_grid = "J-9 waterway",
     notes = {},
@@ -26419,6 +26483,7 @@ return {
     warp_suppressed = true,
     zone_id = 149,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Follow the water south toward the (J-10) landing.",
     map_grid = "J-9/J-10 waterway",
     notes = {},
@@ -26438,6 +26503,7 @@ return {
     warp_suppressed = true,
     zone_id = 149,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Continue southeast and climb out of the water at (J-10).",
     map_grid = "J-10",
     notes = {},
@@ -26457,6 +26523,7 @@ return {
     warp_suppressed = true,
     zone_id = 149,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "After climbing out, turn north briefly and begin hugging the left wall.",
     map_grid = "I/J-10",
     notes = {},
@@ -26476,6 +26543,7 @@ return {
     warp_suppressed = true,
     zone_id = 149,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "After leaving the water, hug the left wall and follow it west across (H/J-10).",
     map_grid = "H/J-10",
     notes = {},
@@ -26495,6 +26563,7 @@ return {
     warp_suppressed = true,
     zone_id = 149,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Turn south and keep following the left wall toward Monastic Cavern entrance 2 at (H-11).",
     map_grid = "H-10/H-11",
     notes = {},
@@ -26534,6 +26603,7 @@ return {
     warp_suppressed = true,
     zone_id = 149,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Inside Monastic Cavern, hug the right wall from the (H-11) arrival into (H-10).",
     map_grid = "H-10",
     notes = {},
@@ -26553,6 +26623,7 @@ return {
     warp_suppressed = true,
     zone_id = 150,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Keep the right wall through the descending bend toward (H-9).",
     map_grid = "H-9/H-10",
     notes = {},
@@ -26572,6 +26643,7 @@ return {
     warp_suppressed = true,
     zone_id = 150,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Turn west while keeping the right wall as the passage enters (G-9).",
     map_grid = "G-9",
     notes = {},
@@ -26591,6 +26663,7 @@ return {
     warp_suppressed = true,
     zone_id = 150,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Keep hugging the right wall west through the (G-9) corridor.",
     map_grid = "G-9",
     notes = {},
@@ -26610,6 +26683,7 @@ return {
     warp_suppressed = true,
     zone_id = 150,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Follow the right wall north through the long (G-8) corridor.",
     map_grid = "G-8",
     notes = {},
@@ -26629,6 +26703,7 @@ return {
     warp_suppressed = true,
     zone_id = 150,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Continue around the right wall and turn east into (H-8).",
     map_grid = "H-8",
     notes = {},
@@ -26668,6 +26743,7 @@ return {
     warp_suppressed = true,
     zone_id = 150,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Back in hidden Davoi at (H-8), follow the first corridor east.",
     map_grid = "H-8",
     notes = {},
@@ -26687,6 +26763,7 @@ return {
     warp_suppressed = true,
     zone_id = 149,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Take the south bend in the hidden (I-8) corridor.",
     map_grid = "I-8",
     notes = {},
@@ -26706,6 +26783,7 @@ return {
     warp_suppressed = true,
     zone_id = 149,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Follow the hidden corridor east toward Sedal-Godjal's final bend.",
     map_grid = "I/J-8",
     notes = {},
@@ -26725,6 +26803,7 @@ return {
     warp_suppressed = true,
     zone_id = 149,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Continue east through the final bend into Sedal-Godjal's room at (J-8).",
     map_grid = "J-8",
     notes = {},
@@ -26765,6 +26844,7 @@ return {
     target_map_label = "Map 1",
     zone_id = 149,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Warp to Fei'Yin Home Point #2 at (I-5) on Map 2. Do not use Home Point #1 for this ring.",
     map_grid = "Map 2 I-5",
     notes = {},
@@ -26784,6 +26864,7 @@ return {
     target_name = "Fei'Yin HP #2",
     zone_id = 204,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "From Home Point #2, follow the Map 2 south hall into (I-6).",
     map_grid = "Map 2 I-6",
     notes = {},
@@ -26803,6 +26884,7 @@ return {
     warp_suppressed = true,
     zone_id = 204,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "At the end of the south hall, turn west in Map 2 (I-6).",
     map_grid = "Map 2 I-6",
     notes = {},
@@ -26822,6 +26904,7 @@ return {
     warp_suppressed = true,
     zone_id = 204,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Turn north into the winding Map 2 (H-6) corridor.",
     map_grid = "Map 2 H-6",
     notes = {},
@@ -26841,6 +26924,7 @@ return {
     warp_suppressed = true,
     zone_id = 204,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Continue north through the Map 2 (H-5) hall.",
     map_grid = "Map 2 H-5",
     notes = {},
@@ -26860,6 +26944,7 @@ return {
     warp_suppressed = true,
     zone_id = 204,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Follow the Map 2 (H-5) corridor west to its far bend.",
     map_grid = "Map 2 H-5",
     notes = {},
@@ -26879,6 +26964,7 @@ return {
     warp_suppressed = true,
     zone_id = 204,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Turn south at the west end of Map 2 (H-5).",
     map_grid = "Map 2 H-5",
     notes = {},
@@ -26898,6 +26984,7 @@ return {
     warp_suppressed = true,
     zone_id = 204,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Follow the return bend through Map 2 (H-6).",
     map_grid = "Map 2 H-6",
     notes = {},
@@ -26917,6 +27004,7 @@ return {
     warp_suppressed = true,
     zone_id = 204,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Loop around and return south through (H-6) on Map 2.",
     map_grid = "Map 2 H-6",
     notes = {},
@@ -26936,6 +27024,7 @@ return {
     warp_suppressed = true,
     zone_id = 204,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Continue west through the (G-6) hall on Map 2.",
     map_grid = "Map 2 G-6",
     notes = {},
@@ -26955,6 +27044,7 @@ return {
     warp_suppressed = true,
     zone_id = 204,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Turn north at the west end of the Map 2 (G-6) hall.",
     map_grid = "Map 2 G-6",
     notes = {},
@@ -26974,6 +27064,7 @@ return {
     warp_suppressed = true,
     zone_id = 204,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Take the north loop through (G-5/G-6) instead of pointing through the central wall.",
     map_grid = "Map 2 G-5/G-6",
     notes = {},
@@ -26993,6 +27084,7 @@ return {
     warp_suppressed = true,
     zone_id = 204,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Follow the north loop west across Map 2 (G-5).",
     map_grid = "Map 2 G-5",
     notes = {},
@@ -27012,6 +27104,7 @@ return {
     warp_suppressed = true,
     zone_id = 204,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Follow the west corridor to the northwest small room at (F-6).",
     map_grid = "Map 2 F-6",
     notes = {},
@@ -27138,6 +27231,7 @@ return {
     step_kind = "talk",
     zone_id = 242,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Warp to the West Sarutabaruta Survival Guide at (H-6) to begin the supported route to the (F-4) tower.",
     map_grid = "H-6",
     notes = {"The Outer Horutoto Ruins Voidwatch warp or West Sarutabaruta Geomagnetic Fount is faster if you already have it; both arrive near the same (F-4) tower."},
@@ -27157,6 +27251,7 @@ return {
     target_name = "W. Saruta Survival Guide",
     zone_id = 115,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "From the Survival Guide, travel northwest through (G-5/G-6).",
     map_grid = "G-5/G-6",
     notes = {},
@@ -27176,6 +27271,7 @@ return {
     warp_suppressed = true,
     zone_id = 115,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Continue northwest across (F-5).",
     map_grid = "F-5",
     notes = {},
@@ -27195,6 +27291,7 @@ return {
     warp_suppressed = true,
     zone_id = 115,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Follow the north trail from (F-5) toward (F-4).",
     map_grid = "F-4/F-5",
     notes = {},
@@ -27214,6 +27311,7 @@ return {
     warp_suppressed = true,
     zone_id = 115,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "At the north bend in (F-4), turn west toward the Horutoto tower.",
     map_grid = "F-4",
     notes = {},
@@ -27233,6 +27331,7 @@ return {
     warp_suppressed = true,
     zone_id = 115,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Follow the (F-4) trail southwest toward the tower approach.",
     map_grid = "F-4",
     notes = {},
@@ -27252,6 +27351,7 @@ return {
     warp_suppressed = true,
     zone_id = 115,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Continue west to the front of the Horutoto tower at (F-4).",
     map_grid = "F-4",
     notes = {},
@@ -27291,6 +27391,7 @@ return {
     warp_suppressed = true,
     zone_id = 115,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "On Outer Horutoto Ruins Map 1, turn at the first entrance bend in (I-5).",
     map_grid = "Map 1 I-5",
     notes = {},
@@ -27310,6 +27411,7 @@ return {
     warp_suppressed = true,
     zone_id = 194,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Descend the Map 1 corridor toward (I-6).",
     map_grid = "Map 1 I-5/I-6",
     notes = {},
@@ -27329,6 +27431,7 @@ return {
     warp_suppressed = true,
     zone_id = 194,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Turn east in (I-6) and approach the first Cracked Wall on Map 1.",
     map_grid = "Map 1 I-6",
     notes = {},
@@ -27367,6 +27470,7 @@ return {
     warp_suppressed = true,
     zone_id = 194,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "After passing the first wall onto Map 2, turn south into the entry corridor.",
     map_grid = "Map 2 H-6",
     notes = {},
@@ -27386,6 +27490,7 @@ return {
     warp_suppressed = true,
     zone_id = 194,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Now on Map 2, follow the entry corridor south from the first wall.",
     map_grid = "Map 2 H-6/H-7",
     notes = {},
@@ -27405,6 +27510,7 @@ return {
     warp_suppressed = true,
     zone_id = 194,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Continue through the Map 2 east hall at (G/H-7).",
     map_grid = "Map 2 G/H-7",
     notes = {},
@@ -27424,6 +27530,7 @@ return {
     warp_suppressed = true,
     zone_id = 194,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "At the end of the Map 2 (G/H-7) passage, turn west toward (G-8).",
     map_grid = "Map 2 G-7/G-8",
     notes = {},
@@ -27443,6 +27550,7 @@ return {
     warp_suppressed = true,
     zone_id = 194,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Follow the corridor west across Map 2 (G-8).",
     map_grid = "Map 2 G-8",
     notes = {},
@@ -27462,6 +27570,7 @@ return {
     warp_suppressed = true,
     zone_id = 194,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Take the final bend in Map 2 (G-8) toward the mission Cracked Wall.",
     map_grid = "Map 2 G-8",
     notes = {},
@@ -27619,6 +27728,7 @@ return {
     target_map_label = "Map 1",
     zone_id = 241,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Warp to the Toraimarai Canal Survival Guide at Map 1 (F-5). Do not warp to the Inner Horutoto Ruins Survival Guide for this objective.",
     map_grid = "Map 1 F-5",
     notes = {"This backtrack reaches Inner Horutoto Ruins Map 4 directly and avoids the Three Mage Gate."},
@@ -27638,6 +27748,7 @@ return {
     target_name = "Toraimarai Canal SG",
     zone_id = 169,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "From the Survival Guide, follow the Map 1 (F-5) backtrack corridor south and down.",
     map_grid = "Map 1 F-5",
     notes = {},
@@ -27657,6 +27768,7 @@ return {
     warp_suppressed = true,
     zone_id = 169,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Turn west at the lower Map 1 (F-5) corridor toward Inner Horutoto Ruins.",
     map_grid = "Map 1 F-5",
     notes = {},
@@ -27696,6 +27808,7 @@ return {
     warp_suppressed = true,
     zone_id = 169,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "From the Map 4 (H-5) arrival, follow the entry hall southeast.",
     map_grid = "Map 4 H-5",
     notes = {},
@@ -27715,6 +27828,7 @@ return {
     warp_suppressed = true,
     zone_id = 192,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "On Inner Horutoto Ruins Map 4, descend from the (H-5) arrival into the southeast passage.",
     map_grid = "Map 4 H-5",
     notes = {},
@@ -27734,6 +27848,7 @@ return {
     warp_suppressed = true,
     zone_id = 192,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Continue through the lower Map 4 passage at (H-6).",
     map_grid = "Map 4 H-6",
     notes = {},
@@ -27753,6 +27868,7 @@ return {
     warp_suppressed = true,
     zone_id = 192,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Follow the long Map 4 corridor south toward (H-7).",
     map_grid = "Map 4 H-6/H-7",
     notes = {},
@@ -27772,6 +27888,7 @@ return {
     warp_suppressed = true,
     zone_id = 192,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Turn southeast through (H/I-7) toward the Gate of Darkness.",
     map_grid = "Map 4 H/I-7",
     notes = {},
@@ -28047,6 +28164,62 @@ return {
     verification_status = "script_verified",
     game_modes = {"ACE", "CW", "WEW"},
     source_url = "https://www.bg-wiki.com/ffxi/Windurst_Mission_9-2",
+    guide_phases = {{
+    instruction = "Get the mission from Janshura-Rashura, the recommended Windurstian Gate Guard, in Port Windurst (B-5); select this guide's mission title.",
+    phase_id = "step_accept_mission",
+    step_ids = {"accept_mission"},
+    title = "Janshura-Rashura",
+  }, {
+    instruction = "Inspect Door: Vestal Chamber at the top of Heavens Tower to begin Moon Reading.",
+    phase_id = "step_begin_moon_reading",
+    step_ids = {"begin_moon_reading"},
+    title = "Door: Vestal Chamber",
+  }, {
+    instruction = "Inspect Qu'Hau Spring in Ro'Maeve (H-6) for the Ancient Verse of Ro'Maeve.",
+    phase_id = "step_obtain_romaeve_verse",
+    step_ids = {"obtain_romaeve_verse"},
+    title = "Qu'Hau Spring",
+  }, {
+    instruction = "Enter Chamber of Oracles from Quicksand Caves Map 5 for the Ancient Verse of Altepa cutscene.",
+    phase_id = "step_obtain_altepa_verse",
+    step_ids = {"obtain_altepa_verse"},
+    title = "Chamber of Oracles entrance",
+  }, {
+    instruction = "Use the Temple Survival Guide, exit into Yhoator Jungle, and re-enter through entrance #3 to reach Temple Map 2.",
+    phase_id = "reach_temple_map_2",
+    step_ids = {"warp_to_temple_uggalepih_sg", "exit_temple_map_1_to_yhoator", "follow_yhoator_h11_west_bend", "round_yhoator_h11_north_corner", "turn_south_to_temple_entrance_3", "enter_temple_map_2"},
+    title = "Reach Temple Map 2",
+  }, {
+    instruction = "Follow the Map 2 route, run /find Uggalepih Key, and defeat Tonberry Cutters until the key drops.",
+    phase_id = "obtain_uggalepih_key",
+    step_ids = {"descend_temple_map_2_entry", "cross_temple_map_2_i6_hall", "climb_temple_map_2_h7", "obtain_uggalepih_key"},
+    title = "Obtain the Uggalepih Key",
+  }, {
+    instruction = "Continue through Map 2 to the Granite Door at (E-8), then trade the Uggalepih Key to open it.",
+    phase_id = "open_uggalepih_key_door",
+    step_ids = {"cross_temple_map_2_west_hall", "turn_south_to_verse_room", "trade_uggalepih_key"},
+    title = "Open the Granite Door",
+  }, {
+    instruction = "Pass through the Granite Door and inspect the ??? at the back of the room for the Ancient Verse of Uggalepih.",
+    phase_id = "claim_uggalepih_verse",
+    step_ids = {"pass_uggalepih_key_door", "approach_uggalepih_verse", "obtain_uggalepih_verse"},
+    title = "Claim the Uggalepih Verse",
+  }, {
+    instruction = "Return to Door: Vestal Chamber at the top of Heavens Tower after collecting all three Ancient Verses.",
+    phase_id = "step_unlock_moon_reading_battlefield",
+    step_ids = {"unlock_moon_reading_battlefield"},
+    title = "Door: Vestal Chamber",
+  }, {
+    instruction = "Enter Moon Reading at Full Moon Fountain; defeat the four Ace Cardians, then defeat Tatzlwurm and Yali with Ajido-Marujido.",
+    phase_id = "step_clear_moon_reading",
+    step_ids = {"clear_moon_reading"},
+    title = "Ace of Cups / Ace of Batons / Ace of Swords / Ace of Coins / Tatzlwurm / Yali",
+  }, {
+    instruction = "Return to Door: Vestal Chamber at the top of Heavens Tower after winning Moon Reading, then zone into Windurst Walls for the Rank 10 finale.",
+    phase_id = "step_complete_mission",
+    step_ids = {"complete_mission"},
+    title = "Door: Vestal Chamber",
+  }},
     steps = {{
     instruction = "Get the mission from Janshura-Rashura, the recommended Windurstian Gate Guard, in Port Windurst (B-5); select this guide's mission title.",
     map_grid = "B-5",
@@ -28118,6 +28291,7 @@ return {
     target_name = "Chamber of Oracles entrance",
     zone_id = 208,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Use the Temple of Uggalepih Survival Guide. It places you on Map 1 at (F-6).",
     map_grid = "Map 1 F-6",
     notes = {},
@@ -28157,6 +28331,7 @@ return {
     warp_suppressed = true,
     zone_id = 159,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "After zoning into Yhoator Jungle, turn left and follow the (H-11) path west around the first bend.",
     map_grid = "Map 1 H-11",
     notes = {},
@@ -28176,6 +28351,7 @@ return {
     warp_suppressed = true,
     zone_id = 124,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Continue west, then round the (H-11) corner to the north instead of following the jungle wall south.",
     map_grid = "Map 1 H-11",
     notes = {},
@@ -28195,6 +28371,7 @@ return {
     warp_suppressed = true,
     zone_id = 124,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Immediately take the next left and turn south toward Temple entrance #3 at (H-11).",
     map_grid = "Map 1 H-11",
     notes = {},
@@ -28234,6 +28411,7 @@ return {
     warp_suppressed = true,
     zone_id = 124,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "On Temple Map 2, follow the entrance passage south and down from (I-5).",
     map_grid = "Map 2 I-5",
     notes = {},
@@ -28253,6 +28431,7 @@ return {
     warp_suppressed = true,
     zone_id = 159,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Continue west across the Map 2 hall from (I-6) toward (H-6).",
     map_grid = "Map 2 H-6",
     notes = {},
@@ -28272,6 +28451,7 @@ return {
     warp_suppressed = true,
     zone_id = 159,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Climb the Map 2 stairs and turn south toward (H-7).",
     map_grid = "Map 2 H-7",
     notes = {},
@@ -28335,6 +28515,7 @@ return {
     warp_suppressed = true,
     zone_id = 159,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "With the Uggalepih Key, continue west through the Map 2 hall toward (F/G-7).",
     map_grid = "Map 2 F/G-7",
     notes = {},
@@ -28354,6 +28535,7 @@ return {
     warp_suppressed = true,
     zone_id = 159,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "At the west end of the hall, turn south toward the locked room at (E-8).",
     map_grid = "Map 2 F-8",
     notes = {},
@@ -28396,6 +28578,7 @@ return {
     warp_suppressed = true,
     zone_id = 159,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Pass through the open Granite Door into the Map 2 (E-8) verse room.",
     map_grid = "Map 2 E-8",
     notes = {},
@@ -28415,6 +28598,7 @@ return {
     warp_suppressed = true,
     zone_id = 159,
   }, {
+    auto_advance_radius = 5.0,
     instruction = "Continue to the back of the Map 2 (E-8) room toward the mission ???.",
     map_grid = "Map 2 E-8",
     notes = {},

@@ -17,6 +17,14 @@ end
 
 local catalog_rows = {}
 local runtime_objective_cache = setmetatable({}, { __mode = "k" })
+local grid_anchor_index = nil
+local grid_maps_by_zone = nil
+local item_data_loaded = false
+local item_data = {
+    schema = "oddq.items.v1",
+    find_guidance = "",
+    items = {},
+}
 
 local mode_for_kind = {
     mission = "missions",
@@ -443,6 +451,192 @@ end
 
 catalog_rows = build_catalog_rows()
 
+local function canonical_grid_token(value)
+    local text = safe_text(value):upper()
+    -- Slash-separated labels describe several cells or a boundary between
+    -- cells.  They are useful guide text, but they are not a safe anchor for
+    -- a user asking for one specific square.
+    if text:find("/", 1, true) ~= nil then
+        return nil
+    end
+    local found, count = nil, 0
+    for column, row_text in text:gmatch("%f[%a]([A-P])%s*%-%s*(%d+)") do
+        local row = tonumber(row_text)
+        local token = row ~= nil and row >= 1 and row <= 16
+            and (column .. "-" .. tostring(row)) or nil
+        if token ~= nil and token ~= found then
+            found = token
+            count = count + 1
+        end
+    end
+    if count == 1 then
+        return found
+    end
+    return nil
+end
+
+local function named_grid_target(value)
+    value = type(value) == "table" and value or {}
+    return safe_text(value.npc_name) ~= ""
+        or safe_text(value.mob_name) ~= ""
+        or safe_text(value.object_name) ~= ""
+        or safe_text(value.target_name) ~= ""
+end
+
+local function append_grid_anchor(index, entry, value, inherited_grid, inherited_map_id, inherited_zone_id)
+    if safe_text((entry or {}).verification_status) ~= "script_verified" then
+        return
+    end
+    value = type(value) == "table" and value or {}
+    if not named_grid_target(value) then
+        return
+    end
+    local zone_id = tonumber(value.zone_id) or tonumber(inherited_zone_id)
+    local map_id = tonumber(value.target_map_id) or tonumber(inherited_map_id)
+    local explicit_grid = safe_text(value.map_grid)
+    local grid = nil
+    if explicit_grid ~= "" then
+        grid = canonical_grid_token(explicit_grid)
+    else
+        grid = canonical_grid_token(inherited_grid)
+    end
+    local position = copy_position(value.position or value)
+    if zone_id == nil or zone_id <= 0 or map_id == nil or map_id <= 0
+        or grid == nil or position == nil then
+        return
+    end
+
+    index[zone_id] = index[zone_id] or {}
+    index[zone_id][grid] = index[zone_id][grid] or {}
+    index[zone_id][grid][map_id] = index[zone_id][grid][map_id] or {
+        positions = {},
+        seen = {},
+    }
+    local bucket = index[zone_id][grid][map_id]
+    local key = string.format("%.6f|%.6f|%.6f", position.x, position.y, position.z)
+    if bucket.seen[key] ~= true then
+        bucket.seen[key] = true
+        bucket.positions[#bucket.positions + 1] = {
+            x = position.x,
+            y = position.y,
+            z = position.z,
+            map_id = map_id,
+            map_grid = grid,
+            position_kind = "map_grid_anchor",
+            position_label = "(" .. grid .. ")",
+        }
+    end
+end
+
+local function build_grid_anchor_index()
+    local index = {}
+    local maps_by_zone = {}
+    local function record_map(zone_id, map_id)
+        zone_id = tonumber(zone_id)
+        map_id = tonumber(map_id)
+        if zone_id ~= nil and zone_id > 0 and map_id ~= nil and map_id > 0 then
+            maps_by_zone[zone_id] = maps_by_zone[zone_id] or {}
+            maps_by_zone[zone_id][map_id] = true
+        end
+    end
+    for _, entry in ipairs(catalog_rows) do
+        for _, step in ipairs(type(entry.steps) == "table" and entry.steps or {}) do
+            -- Map-page metadata is useful as a conservative ambiguity guard
+            -- even when the corresponding position is not authoritative
+            -- enough to become an anchor.
+            record_map(step.zone_id, step.target_map_id)
+            append_grid_anchor(index, entry, step, step.map_grid, step.target_map_id, step.zone_id)
+            local step_positions = type(step.positions) == "table" and step.positions or {}
+            local inherited_position_grid = #step_positions == 1 and step.map_grid or nil
+            for _, position in ipairs(step_positions) do
+                record_map(step.zone_id, position.map_id or position.target_map_id or step.target_map_id)
+                local candidate = {
+                    zone_id = step.zone_id,
+                    target_map_id = position.map_id or position.target_map_id or step.target_map_id,
+                    map_grid = position.map_grid or inherited_position_grid,
+                    npc_name = position.npc_name or step.npc_name,
+                    mob_name = position.mob_name or step.mob_name,
+                    object_name = position.object_name or step.object_name,
+                    target_name = position.target_name or step.target_name,
+                    position = position,
+                }
+                append_grid_anchor(
+                    index,
+                    entry,
+                    candidate,
+                    inherited_position_grid,
+                    step.target_map_id,
+                    step.zone_id
+                )
+            end
+            local step_choices = type(step.choices) == "table" and step.choices or {}
+            local inherited_choice_grid = #step_choices == 1 and step.map_grid or nil
+            for _, choice in ipairs(step_choices) do
+                record_map(choice.zone_id or step.zone_id, choice.target_map_id or step.target_map_id)
+                append_grid_anchor(
+                    index,
+                    entry,
+                    choice,
+                    choice.map_grid or inherited_choice_grid,
+                    choice.target_map_id or step.target_map_id,
+                    choice.zone_id or step.zone_id
+                )
+            end
+        end
+    end
+    return index, maps_by_zone
+end
+
+function objective_catalog.grid_anchors(zone_id, map_id, map_grid)
+    zone_id = tonumber(zone_id)
+    map_id = tonumber(map_id)
+    local grid = canonical_grid_token(map_grid)
+    if zone_id == nil or zone_id <= 0 or grid == nil then
+        return nil, { reason = "invalid_grid", grid = grid or safe_text(map_grid) }
+    end
+    if grid_anchor_index == nil then
+        grid_anchor_index, grid_maps_by_zone = build_grid_anchor_index()
+    end
+    local by_map = ((grid_anchor_index[zone_id] or {})[grid] or {})
+    local map_ids = {}
+    for candidate_map_id, bucket in pairs(by_map) do
+        if type(bucket) == "table" and type(bucket.positions) == "table" and #bucket.positions > 0 then
+            map_ids[#map_ids + 1] = candidate_map_id
+        end
+    end
+    table.sort(map_ids)
+    local zone_map_ids = {}
+    for candidate_map_id in pairs((grid_maps_by_zone or {})[zone_id] or {}) do
+        zone_map_ids[#zone_map_ids + 1] = candidate_map_id
+    end
+    table.sort(zone_map_ids)
+    if map_id == nil and #zone_map_ids > 1 then
+        return nil, { reason = "ambiguous_map", grid = grid, map_ids = zone_map_ids }
+    end
+    local selected_map_id = map_id or map_ids[1]
+    local selected = selected_map_id ~= nil and by_map[selected_map_id] or nil
+    if type(selected) ~= "table" or type(selected.positions) ~= "table" or #selected.positions == 0 then
+        return nil, {
+            reason = "not_found",
+            grid = grid,
+            map_id = selected_map_id,
+            map_ids = map_ids,
+        }
+    end
+    local positions = {}
+    for index, position in ipairs(selected.positions) do
+        positions[index] = copy_position(position)
+        positions[index].position_kind = "map_grid_anchor"
+        positions[index].position_label = "(" .. grid .. ")"
+    end
+    return positions, {
+        reason = "resolved",
+        grid = grid,
+        map_id = selected_map_id,
+        map_ids = map_ids,
+    }
+end
+
 local function append_prerequisite_list(parts, label, values)
     if type(values) == "table" and #values > 0 then
         table.insert(parts, label .. ": " .. table.concat(values, ", "))
@@ -570,6 +764,24 @@ local function copy_choices(choices)
     return rows
 end
 
+local function copy_guide_phases(phases)
+    local rows = {}
+    for _, phase in ipairs(type(phases) == "table" and phases or {}) do
+        if type(phase) == "table" then
+            table.insert(rows, {
+                phase_id = safe_text(phase.phase_id),
+                title = safe_text(phase.title),
+                instruction = safe_text(phase.instruction),
+                step_ids = copy_list(phase.step_ids),
+            })
+        end
+    end
+    if #rows == 0 then
+        return nil
+    end
+    return rows
+end
+
 local function copy_steps(entry)
     local rows = {}
     if type(entry.steps) ~= "table" then
@@ -603,6 +815,7 @@ local function copy_steps(entry)
                 auto_advance_events = copy_auto_advance_events(step.auto_advance_events),
                 pointer_suppressed = step.pointer_suppressed == true,
                 auto_advance_zone_id = tonumber(step.auto_advance_zone_id),
+                auto_advance_radius = tonumber(step.auto_advance_radius),
                 choices = copy_choices(step.choices),
                 instruction = safe_text(step.instruction),
                 required_items = copy_list(step.required_items),
@@ -955,6 +1168,82 @@ local function travel_unlock_alias_score(entry, query)
     return nil
 end
 
+local function load_item_data()
+    if item_data_loaded then
+        return item_data
+    end
+    item_data_loaded = true
+    local loaded_items, value = pcall(require, "data/items")
+    if loaded_items and type(value) == "table"
+        and safe_text(value.schema) == "oddq.items.v1"
+        and type(value.items) == "table" then
+        item_data = value
+    end
+    return item_data
+end
+
+local function item_aliases(item)
+    return type(item) == "table" and type(item.search_aliases) == "table"
+        and item.search_aliases or {}
+end
+
+local function item_search_score(item, query)
+    local normalized_query = normalize_search_text(query)
+    if normalized_query == "" then
+        return 100
+    end
+    local item_id = math.floor(tonumber((item or {}).item_id) or 0)
+    local query_id = normalized_query:match("^item%s+(%d+)$")
+        or normalized_query:match("^(%d+)$")
+    if query_id ~= nil and item_id == tonumber(query_id) then
+        return 0
+    end
+
+    local normalized_name = normalize_search_text((item or {}).name)
+    if normalized_name == normalized_query then
+        return 1
+    end
+    for _, alias in ipairs(item_aliases(item)) do
+        if normalize_search_text(alias) == normalized_query then
+            return 2
+        end
+    end
+    if normalized_name:sub(1, #normalized_query) == normalized_query then
+        return 3
+    end
+    for _, alias in ipairs(item_aliases(item)) do
+        if normalize_search_text(alias):sub(1, #normalized_query) == normalized_query then
+            return 4
+        end
+    end
+
+    local searchable = normalized_name .. " " .. table.concat(item_aliases(item), " ")
+    if normalized_contains_terms(searchable, normalized_query) then
+        return 5
+    end
+    return nil
+end
+
+local function sorted_item_matches(query)
+    local matches = {}
+    for _, item in ipairs(load_item_data().items or {}) do
+        if type(item) == "table" then
+            local score = item_search_score(item, query)
+            if score ~= nil then
+                matches[#matches + 1] = { score = score, item = item }
+            end
+        end
+    end
+    table.sort(matches, function(left, right)
+        if left.score ~= right.score then return left.score < right.score end
+        local left_name = safe_text(left.item.name):lower()
+        local right_name = safe_text(right.item.name):lower()
+        if left_name ~= right_name then return left_name < right_name end
+        return (tonumber(left.item.item_id) or 0) < (tonumber(right.item.item_id) or 0)
+    end)
+    return matches
+end
+
 local function content_unlock_title(entry)
     local objective_id = safe_text((entry or {}).objective_id)
     local name = safe_text((entry or {}).name)
@@ -1266,6 +1555,80 @@ function objective_catalog.counts()
         end
     end
     return result
+end
+
+function objective_catalog.item_count()
+    return #(load_item_data().items or {})
+end
+
+function objective_catalog.item_find_guidance()
+    return safe_text(load_item_data().find_guidance)
+end
+
+function objective_catalog.search_items(query, limit)
+    local max_count = math.max(1, math.floor(tonumber(limit) or 12))
+    local normalized_query = normalize_search_text(query)
+    local results = {}
+    if normalized_query == "" then
+        for _, item in ipairs(load_item_data().items or {}) do
+            if type(item) == "table" then results[#results + 1] = item end
+            if #results >= max_count then break end
+        end
+        return results
+    end
+    for _, match in ipairs(sorted_item_matches(normalized_query)) do
+        results[#results + 1] = match.item
+        if #results >= max_count then break end
+    end
+    return results
+end
+
+function objective_catalog.find_item_by_id(value)
+    local text = normalize_search_text(value)
+    local wanted = tonumber(text:match("^item%s+(%d+)$") or text:match("^(%d+)$"))
+    if wanted == nil then return nil end
+    for _, item in ipairs(load_item_data().items or {}) do
+        if tonumber((item or {}).item_id) == wanted then return item end
+    end
+    return nil
+end
+
+function objective_catalog.find_exact_item(query)
+    local by_id = objective_catalog.find_item_by_id(query)
+    if by_id ~= nil then return by_id end
+    local wanted = normalize_search_text(query)
+    if wanted == "" then return nil end
+    for _, item in ipairs(load_item_data().items or {}) do
+        if normalize_search_text((item or {}).name) == wanted then return item end
+        for _, alias in ipairs(item_aliases(item)) do
+            if normalize_search_text(alias) == wanted then return item end
+        end
+    end
+    return nil
+end
+
+function objective_catalog.item_source_route(item, source_index)
+    local source = type(item) == "table" and type(item.sources) == "table"
+        and item.sources[math.floor(tonumber(source_index) or 0)] or nil
+    local route = type(source) == "table" and source.route or nil
+    local position = type(route) == "table" and route.position or nil
+    local target_name = safe_text(type(route) == "table" and route.target_name or nil)
+    local zone_id = math.floor(tonumber(type(route) == "table" and route.zone_id or nil) or 0)
+    local x = tonumber(type(position) == "table" and position.x or nil)
+    local y = tonumber(type(position) == "table" and position.y or nil)
+    local z = tonumber(type(position) == "table" and position.z or nil)
+    if target_name == "" or zone_id <= 0 or x == nil or y == nil or z == nil
+        or x ~= x or y ~= y or z ~= z
+        or math.abs(x) == math.huge or math.abs(y) == math.huge or math.abs(z) == math.huge then
+        return nil
+    end
+    return {
+        target_name = target_name,
+        zone_id = zone_id,
+        zone_name = safe_text(route.zone_name),
+        map_grid = safe_text(route.map_grid),
+        position = { x = x, y = y, z = z },
+    }
 end
 
 function objective_catalog.list(mode, limit, catalog_group, exp_category_keys, expansion_keys)
@@ -1672,6 +2035,7 @@ local function contract_steps(steps)
             auto_advance_events = copy_auto_advance_events(step.auto_advance_events),
             pointer_suppressed = step.pointer_suppressed == true,
             auto_advance_zone_id = tonumber(step.auto_advance_zone_id),
+            auto_advance_radius = tonumber(step.auto_advance_radius),
             instruction = safe_text(step.instruction),
             required_items = copy_list(step.required_items),
             required_key_items = copy_list(step.required_key_items),
@@ -1699,6 +2063,7 @@ function objective_catalog.to_runtime_objective(objective, entry)
     end
     if type(entry) == "table" and safe_text(entry.objective_id) == safe_text(objective.objective_id) then
         runtime.prerequisites = copy_prerequisites(entry)
+        runtime.guide_phases = copy_guide_phases(entry.guide_phases)
         runtime.steps = copy_steps(entry)
     end
     runtime_objective_cache[objective] = runtime
@@ -1754,6 +2119,7 @@ function objective_catalog.to_objective_plan(entry)
                     job_requirement = safe_text(entry.job_requirement),
                     level_requirement_unknown = entry.level_requirement_unknown == true,
                     repeatable = entry.repeatable == true,
+                    guide_phases = copy_guide_phases(entry.guide_phases),
                     steps = contract_steps(guide_steps),
                     evidence = {
                         source = safe_text(entry.source_url) ~= "" and safe_text(entry.source_url) or "odddb_local_catalog",

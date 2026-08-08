@@ -2,7 +2,8 @@
 
 Clean, helpful quest and mission guidance for CatsEyeXI.
 
-OddQ is a local Ashita v4 addon with two focused views in one shared window:
+OddQ is a local Ashita v4 addon with source-backed item lookup and two focused
+views in one shared window:
 
 - **Browser** searches and filters the bundled guide catalog.
 - **Guide** shows the selected guide and its current step.
@@ -15,34 +16,38 @@ panel, bridge, backend, updater, or outgoing packet automation.
 
 ## Release status
 
-`v1.0.6` is the current stable public patch release. It concludes the Windurst
-nation-mission live-test cycle with detailed maze and map-change routing through
-Mission 9-2. It also adds the faceted 3D HP-crystal pointer, corrected
-camera-relative direction, HP/SG-first route selection, mapless-zone exits,
-stronger progression triggers, and a durable `/odd` command spine.
+`v1.0.7` is the current stable public patch release. It adds source-backed item
+search, a custom coordinate/grid pointer, and an **Items** Browser button. The
+Browser is taller by default so the Catseye Quests view shows five complete
+results. Windurst 8-2 and 9-2 begin the pointer-authoritative guide model: the
+pointer keeps detailed corridor legs and gates while the Guide presents fewer,
+readable phases: 77 pointer legs behind 12 phases in 8-2 and 23 legs behind 11
+phases in 9-2. The completed Windurst mission routing, faceted 3D HP-crystal
+pointer, HP/SG-first routing, mapless-zone exits, and progression triggers from
+v1.0.6 remain included.
 
 ## In-game views
 
-### Active mission assistance
+### Guide Browser
 
-The Browser and Step Pointer work together while the pointer offers the fastest
-available warp route.
+The primary row keeps **Items** between **NPC Finder** and **EXP Camps**, while
+the taller Browser shows five complete Catseye Quest results.
 
-![OddQ active mission assistance with the Warp button available](images/oddq-mission-guide-warp.png)
+![OddQ Guide Browser with Items between NPC Finder and EXP Camps](images/oddq-guide-display-1.0.7.png)
 
 ### Guide display
 
 The focused Guide view keeps the current mission step, destination, progress,
 and navigation controls together while the Step Pointer remains visible.
 
-![OddQ mission Guide display with the Step Pointer](images/oddq-guide-display.png)
+![OddQ mission Guide display with the Step Pointer](images/oddq-guide-display-with-pointer-1.0.7.png)
 
 ### Minimal obstruction
 
-Both OddQ windows collapse to their title bars when the player wants an
-unobstructed game view.
+The Guide window collapses while the compact Step Pointer keeps the selected
+destination and available Warp action visible.
 
-![OddQ Guide and Step Pointer minimized to their title bars](images/oddq-minimized-windows.png)
+![OddQ Step Pointer with Warp and the Guide minimized](images/oddq-mission-guide-warp-with-minimized-guide-window-1.0.7.png)
 
 ## Install
 
@@ -61,25 +66,30 @@ Load and open it in game:
 
 No executable, DLL, service, bridge, backend, or server change is required.
 
-## Commands
+## Using OddQ
 
-```text
-/odd                       Open the guide browser
-/odd <search>              Load the best matching local guide
-/odd missions              Browse mission guides
-/odd quests                Browse quest guides
-/odd jobs                  Browse job-unlock guides
-/odd exp                   Browse EXP-camp guides
-/odd next                  Advance to the next guide step
-/odd previous              Return to the previous guide step
-/odd route warp|no-warp    Choose guidance for your teleport unlocks
-/odd warp-home             Use the recommended available Warp Home item
-/odd cancel                Cancel the loaded guide and clear its resume state
-/odd status                Print concise current-step guidance
-/odd npcs [search]         Browse or search NPC locations
-/odd close                 Close OddQ
-/odd help                  Print the command list
-```
+Most players can use OddQ entirely through its windows and buttons:
+
+1. Open OddQ and choose **Missions**, **Catseye Quests**, **NPC Finder**,
+   **Items**, or **EXP Camps**.
+2. Search, select a result, then choose **Open Guide** or **Open Item**.
+3. Follow the Step Pointer. Use the Guide's **Previous** and **Next** controls
+   only for semantic steps that cannot be observed safely.
+
+The **Items** view searches 23,210 canonical numeric item identities by name,
+ID, and alias. It currently has source details for 6,375 items across normal
+drops, gil/guild shops, synthesis, and desynthesis. Exact merchant locations
+can open a temporary pointer; ambiguous drop and recipe sources remain
+descriptive. Item details also remind players to use `/find "<item>"` and check
+Mog House/storage before farming. Known server drop-rate tokens are translated
+to their documented percentages and rarity labels; unknown tokens stay clearly
+identified instead of being guessed. Missing coverage is shown as **No sourced
+acquisition path yet**.
+
+When no guide is selected, **Custom Pointer** accepts copied `(X, Y)` pairs and
+verified grids such as `(E-5)`. Multi-map zones require an explicit form such
+as `Map 2 (E-5)` when the map page cannot be established safely. Custom
+destinations are current-zone, no-warp, and intentionally session-only.
 
 Loading a guide replaces the Browser view in the same window. **Back to
 Guides** returns to search without opening another window. In the Browser,
@@ -113,7 +123,9 @@ only** instead of presenting invented directions.
 
 ## Local-only safety and privacy
 
-The v1.0.6 addon makes no network requests and has no bridge, backend, updater,
+The v1.0.7 addon makes one notification-only HTTPS check of the public OddQ
+GitHub release API per addon session; it never downloads or installs updates.
+OddQ has no bridge, backend,
 telemetry, outgoing packet mutation, or credential path. It reads local zone,
 position, heading, rank, mounted status, and only the named inventory/key-item evidence
 needed by the current authored step. A receive-only handler captures cutscene
@@ -134,6 +146,33 @@ booleans needed to restore the Rank 10 milestone notice. Player rank is not pers
 See `SECURITY.md`, `CATSEYEXI_HOSTED.md`, the repository `LICENSE`, and
 `NOTICE.md` for the runtime, license, redistribution, and attribution boundaries.
 
+## Advanced text commands
+
+The Browser and Guide buttons cover normal use. These durable commands are
+available for keyboard-driven workflows and troubleshooting:
+
+<details>
+<summary>Show text commands</summary>
+
+```text
+/odd                              Open the guide browser
+/odd <search>                     Load the best matching local guide
+/odd missions|quests|jobs|exp     Browse a guide category
+/odd npcs [search]                Browse or search NPC locations
+/odd items [search]               Browse or search item acquisition details
+/odd pointer <X,Y|GRID>|clear     Set or clear a custom current-zone pointer
+/odd next                         Advance one guide step
+/odd previous                     Return one guide step
+/odd route warp|no-warp           Choose guidance for teleport unlocks
+/odd warp-home                    Use the recommended available Warp Home item
+/odd cancel                       Cancel the guide and clear its resume state
+/odd status                       Print concise current guidance
+/odd close                        Close OddQ
+/odd help                         Print the durable command list
+```
+
+</details>
+
 ## License and CatsEyeXI redistribution
 
 OddQ source code and original documentation are licensed under GPL-3.0-only.
@@ -144,9 +183,14 @@ CatsEyeXI-owned material is not relicensed by OddQ; see `NOTICE.md`.
 
 ## Verification boundary
 
-v1.0.6 has source, syntax, test, layout-probe, package, archive, downloaded-
-asset, and installed-hash checks. The release package contains exactly 29
-runtime Lua/data files. The screenshots above are direct in-game captures
-supplied by the product owner; they are repository documentation and are not
-included in the release ZIP. No automated interaction with a CatsEyeXI game
-window is part of this release.
+v1.0.7 has source, syntax, test, layout-probe, package, archive, and
+installed-hash checks. Independent downloaded-asset validation follows
+publication. The release package contains exactly 42 runtime Lua/data files.
+The screenshots above are direct in-game captures supplied by the product
+owner; they are repository documentation and are not included in the release
+ZIP. No automated interaction with a CatsEyeXI game window is part of this
+release.
+
+Item acquisition currently covers normal drops, gil/guild shops, synthesis,
+and desynthesis. Currency exchanges, quest rewards, battlefields, NM spawn
+rules, HELM, chests/coffers/caskets, and key items remain future source work.

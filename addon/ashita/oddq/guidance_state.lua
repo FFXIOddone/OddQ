@@ -32,6 +32,12 @@ function guidance_state.new()
         guide_browser_query = "",
         guide_browser_page = 1,
         guide_browser_selected_index = 1,
+        guide_browser_item_id = "",
+        item_route_source_id = "",
+        custom_pointer_input = "",
+        custom_pointer_error = "",
+        custom_pointer_active = false,
+        custom_pointer_count = 0,
         route_mode = "WARP",
         exp_types = {
             solo_trusts = true,
@@ -51,6 +57,125 @@ function guidance_state.reset_step_transition(state)
     end
     state._step_transition_key = nil
     state._step_transition_zone_id = nil
+end
+
+function guidance_state.reset_step_proximity(state)
+    if type(state) ~= "table" then
+        return
+    end
+    state._step_proximity_key = nil
+    state._step_proximity_inside = nil
+end
+
+local function copied_position(value)
+    if type(value) ~= "table" then
+        return nil
+    end
+    local x = tonumber(value.x or value.X)
+    local y = tonumber(value.y or value.Y)
+    local z = tonumber(value.z or value.Z)
+    if x == nil or y == nil or z == nil then
+        return nil
+    end
+    return { x = x, y = y, z = z }
+end
+
+local function step_positions(step)
+    local positions = {}
+    local direct = copied_position((step or {}).position)
+    if direct ~= nil then
+        positions[#positions + 1] = direct
+    end
+    for _, value in ipairs(type((step or {}).positions) == "table" and step.positions or {}) do
+        local position = copied_position(value)
+        if position ~= nil then
+            positions[#positions + 1] = position
+        end
+    end
+    return positions
+end
+
+local function spatial_distance(left, right)
+    local dx = right.x - left.x
+    local dy = right.y - left.y
+    local dz = right.z - left.z
+    return math.sqrt((dx * dx) + (dy * dy) + (dz * dz))
+end
+
+function guidance_state.observe_step_proximity(state, objective, live_context)
+    local steps = type(objective) == "table" and objective.steps or nil
+    if type(state) ~= "table" or type(steps) ~= "table" or #steps == 0 then
+        return false
+    end
+    local selected = math.floor(tonumber(state.guide_step_tab_index) or 1)
+    selected = math.max(1, math.min(selected, #steps))
+    if selected >= #steps then
+        return false
+    end
+
+    local step = type(steps[selected]) == "table" and steps[selected] or {}
+    local step_kind = tostring(step.step_kind or step.type or ""):lower()
+    local radius = tonumber(step.auto_advance_radius)
+    if step_kind ~= "travel" or radius == nil or radius <= 0 then
+        return false
+    end
+
+    local objective_id = tostring(objective.objective_id or objective.id or objective.name or "")
+    local proximity_key = objective_id .. "|" .. tostring(selected) .. "|" .. tostring(step.step_id or "")
+    local function observe_definitely_outside()
+        state._step_proximity_key = proximity_key
+        state._step_proximity_inside = false
+        return false
+    end
+
+    local live = type(live_context) == "table" and live_context or {}
+    local current_zone = tonumber(live.current_zone_id or live.zone_id or live.zone)
+    local target_zone = tonumber(step.zone_id)
+    if target_zone ~= nil and target_zone > 0
+        and (current_zone == nil or current_zone ~= target_zone) then
+        return observe_definitely_outside()
+    end
+    local current_map = tonumber(live.current_map_id or live.map_id or live.map_index or live.map_page)
+    local target_map = tonumber(step.target_map_id)
+    if target_map ~= nil and current_map ~= nil and current_map ~= target_map then
+        return observe_definitely_outside()
+    end
+    if live.current_position_available == false then
+        return false
+    end
+    local current = copied_position(live.current_position)
+    local positions = step_positions(step)
+    if current == nil or #positions == 0 then
+        return false
+    end
+
+    local inside = false
+    for _, position in ipairs(positions) do
+        if spatial_distance(current, position) <= radius then
+            inside = true
+            break
+        end
+    end
+    if state._step_proximity_key ~= proximity_key then
+        state._step_proximity_key = proximity_key
+        state._step_proximity_inside = inside
+        return false
+    end
+
+    local was_inside = state._step_proximity_inside == true
+    state._step_proximity_inside = inside
+    if inside ~= true or was_inside then
+        return false
+    end
+
+    state.guide_step_tab_index = selected + 1
+    guidance_state.reset_step_transition(state)
+    guidance_state.reset_step_proximity(state)
+    return true, selected + 1, {
+        event = "pointer_proximity_reached",
+        step_id = tostring(step.step_id or ""),
+        radius = radius,
+    }
 end
 
 function guidance_state.observe_step_zone_transition(state, objective, current_zone_id)
@@ -85,6 +210,7 @@ function guidance_state.observe_step_zone_transition(state, objective, current_z
 
     state.guide_step_tab_index = selected + 1
     guidance_state.reset_step_transition(state)
+    guidance_state.reset_step_proximity(state)
     return true, selected + 1
 end
 
@@ -99,6 +225,7 @@ function guidance_state.advance_for_progress_events(state, objective, events, ma
     if complete ~= true then return false end
     state.guide_step_tab_index = selected + 1
     guidance_state.reset_step_transition(state)
+    guidance_state.reset_step_proximity(state)
     return true, selected + 1, evidence
 end
 

@@ -3,12 +3,13 @@ local command_spine = {}
 local DEFINITIONS = {
     { name = "open", handler = "open", aliases = { "open", "menu", "welcome" }, usage = "/odd", summary = "open the guide browser" },
     { name = "close", handler = "close", aliases = { "close" }, usage = "/odd close", summary = "Close OddQ." },
-    { name = "cancel", handler = "cancel", aliases = { "cancel" }, usage = "/odd cancel", summary = "Cancel the current guide and clear its resume state." },
+    { name = "cancel", handler = "cancel", aliases = { "cancel" }, usage = "/odd cancel", summary = "Cancel the active guide or temporary pointer and clear saved guide state." },
     { name = "back", handler = "back", aliases = { "back" }, usage = "/odd back", summary = "Return from the Guide display to the Browser." },
     { name = "status", handler = "status", aliases = { "status", "where", "current" }, usage = "/odd status", summary = "Print the current guide step." },
     { name = "next", handler = "next", aliases = { "next" }, usage = "/odd next", summary = "Advance one guide step or mission." },
     { name = "previous", handler = "previous", aliases = { "previous", "prev" }, usage = "/odd previous", summary = "Return one guide step or mission." },
     { name = "route", handler = "route", aliases = { "route", "route-mode" }, usage = "/odd route warp|no-warp", summary = "Choose guidance for the player's teleport unlocks." },
+    { name = "pointer", handler = "pointer", aliases = { "pointer", "position", "pos", "coordinates", "coords", "xy", "grid" }, usage = "/odd pointer <X,Y|GRID>|clear", summary = "Set a temporary pointer to coordinates or a verified grid like (E-5) in the current zone." },
     { name = "warp-home", handler = "warp_home", aliases = { "warp-home" }, usage = "/odd warp-home", summary = "Use the recommended available Warp Home item." },
     { name = "help", handler = "help", aliases = { "help" }, usage = "/odd help", summary = "List durable OddQ text commands." },
     { name = "plan", handler = "plan", aliases = { "plan" }, usage = "/odd plan [category] [search]", summary = "Browse or load a guide with an optional category." },
@@ -23,6 +24,7 @@ local DEFINITIONS = {
     { name = "mageburn", handler = "category", aliases = { "mageburn", "manaburn" }, usage = "/odd mageburn [search]", summary = "Browse mage-burn EXP camps.", category = "exp_mageburn", mode = "exp" },
     { name = "meleeburn", handler = "category", aliases = { "meleeburn", "petburn" }, usage = "/odd meleeburn [search]", summary = "Browse melee-burn EXP camps.", category = "exp_meleeburn", mode = "exp" },
     { name = "npcs", handler = "category", aliases = { "npcs", "npc", "finder" }, usage = "/odd npcs [search]", summary = "Browse or search NPC locations.", category = "npcs", mode = "npcs" },
+    { name = "items", handler = "category", aliases = { "items", "item" }, usage = "/odd items [query]", summary = "Search source-backed item acquisition by name or numeric item ID.", category = "items", mode = "items" },
 }
 
 local BY_ALIAS = {}
