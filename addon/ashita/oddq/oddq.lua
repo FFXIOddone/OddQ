@@ -1,6 +1,6 @@
 addon.name = "oddq"
 addon.author = "Odd"
-addon.version = "1.0.7"
+addon.version = "1.0.8"
 addon.desc = "Local quest and mission guide browser."
 addon.link = "https://github.com/FFXIOddone/OddQ/releases/latest"
 

@@ -162,24 +162,13 @@ function main_window.render(imgui, state, objective, on_command)
     else
         height = tonumber(layout.browser_height) or height
     end
-    local min_width = math.min(tonumber(layout.min_width) or 480.0, width)
-    local min_height = height
-    local max_width = math.max(min_width, tonumber(layout.max_width) or width)
-    local max_height = math.max(min_height, tonumber(layout.max_height) or height)
+    local max_width = math.max(width, tonumber(layout.max_width) or width)
+    local max_height = math.max(height, tonumber(layout.max_height) or height)
     if imgui.SetNextWindowSize ~= nil then
-        local layout_key = view .. (resume_visible and ":resume" or ":plain")
-        local condition = ImGuiCond_FirstUseEver
-        if state._oddq_main_window_layout_key ~= layout_key then
-            condition = tonumber(_G.ImGuiCond_Always) or 0
-            state._oddq_main_window_layout_key = layout_key
-        end
-        imgui.SetNextWindowSize({ width, height }, condition)
+        imgui.SetNextWindowSize({ width, height }, ImGuiCond_FirstUseEver)
     end
     if imgui.SetNextWindowSizeConstraints ~= nil then
-        imgui.SetNextWindowSizeConstraints(
-            { min_width, min_height },
-            { max_width, max_height }
-        )
+        imgui.SetNextWindowSizeConstraints({ 0.0, 0.0 }, { max_width, max_height })
     end
     local pushed = skin.push_window(imgui)
     local visible, open = window_state.begin(imgui, "OddQ", true, no_scrollbar_flags())

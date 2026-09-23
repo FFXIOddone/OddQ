@@ -10,7 +10,12 @@ heading, and rank to guide the selected objective and show the optional Rank
 
 ## Release status
 
-`v1.0.7` is the current patch release. It adds source-backed item search, a
+`v1.0.8` unlocks the main window's minimum size and keeps your chosen size when
+switching between Browser and Guide. Thanks to **@kimeids on Discord** for
+requesting this improvement. Very small windows may clip content; enlarge the
+window to see all controls. ImGui's native minimum still applies.
+
+This patch preserves the guides and bundled data from v1.0.7. That release added source-backed item search, a
 custom coordinate/grid pointer, and an **Items** Browser button. The Browser is
 also taller by default so the Catseye Quests view shows five complete results.
 Windurst 8-2 and 9-2 begin the pointer-authoritative guide model: the pointer
@@ -53,7 +58,7 @@ arrival or reset references, not verified pull locations.
 
 ## Install
 
-Download the v1.0.7 release archive and copy:
+Download the v1.0.8 release archive and copy:
 
 ```text
 Ashita/addons/oddq -> <Ashita>/addons/oddq
@@ -176,9 +181,9 @@ evidence, backups, captures, and executables are excluded.
 - OddQ selects guidance and teleport legs; it does not move the character.
 - Unknown map pages use a visible `Map #1` presentation fallback until sourced
   page metadata is added.
-- v1.0.7 has source, syntax, contract, layout, package, archive, and
-  installed-hash evidence. Independent downloaded-asset validation follows
-  publication. UI screenshots remain direct owner-supplied in-game captures.
+- v1.0.8 is checked with focused window behavior tests, LuaJIT syntax checks,
+  and archive integrity checks. The resize patch has not been tested in-game;
+  the screenshots above show the previous release.
 - Item acquisition currently covers normal drops, gil/guild shops, synthesis,
   and desynthesis. Currency exchanges, quest rewards, battlefields, NM spawn
   rules, HELM, chests/coffers/caskets, and key items remain future source work.

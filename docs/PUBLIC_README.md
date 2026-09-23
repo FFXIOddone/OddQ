@@ -16,7 +16,12 @@ panel, bridge, backend, updater, or outgoing packet automation.
 
 ## Release status
 
-`v1.0.7` is the current stable public patch release. It adds source-backed item
+`v1.0.8` unlocks the main window's minimum size and preserves your chosen size
+when switching between Browser and Guide. Thanks to **@kimeids on Discord** for
+requesting this improvement. Very small windows may clip content; enlarge the
+window to see all controls. ImGui's native minimum still applies.
+
+The guides and bundled data remain unchanged from v1.0.7, which added source-backed item
 search, a custom coordinate/grid pointer, and an **Items** Browser button. The
 Browser is taller by default so the Catseye Quests view shows five complete
 results. Windurst 8-2 and 9-2 begin the pointer-authoritative guide model: the
@@ -123,7 +128,7 @@ only** instead of presenting invented directions.
 
 ## Local-only safety and privacy
 
-The v1.0.7 addon makes one notification-only HTTPS check of the public OddQ
+The v1.0.8 addon makes one notification-only HTTPS check of the public OddQ
 GitHub release API per addon session; it never downloads or installs updates.
 OddQ has no bridge, backend,
 telemetry, outgoing packet mutation, or credential path. It reads local zone,
@@ -183,11 +188,11 @@ CatsEyeXI-owned material is not relicensed by OddQ; see `NOTICE.md`.
 
 ## Verification boundary
 
-v1.0.7 has source, syntax, test, layout-probe, package, archive, and
-installed-hash checks. Independent downloaded-asset validation follows
-publication. The release package contains exactly 42 runtime Lua/data files.
+v1.0.8 has focused window behavior tests, LuaJIT syntax checks, and archive
+integrity checks. The resize patch has not been tested in-game. The release
+package contains exactly 42 runtime Lua/data files.
 The screenshots above are direct in-game captures supplied by the product
-owner; they are repository documentation and are not included in the release
+owner for v1.0.7; they are repository documentation and are not included in the release
 ZIP. No automated interaction with a CatsEyeXI game window is part of this
 release.
 
